@@ -1,6 +1,10 @@
 /**
- * Based on MyPiano by ZhangFL
- * (eoeAndroid flylyke * http://www.eoeandroid.com/space.php?uid=1178)
+ * For information on usage and redistribution, and for a DISCLAIMER OF ALL
+ * WARRANTIES, see the file, "LICENSE.txt," in this distribution.
+ * 
+ * Piano GUI based on MyPiano by ZhangFL
+ * http://code.google.com/p/mobexamples/wiki/android_mypiano
+ * http://www.eoeandroid.com/space.php?uid=1178
  */
 
 package com.noisepages.nettoyeur.mididemo;
