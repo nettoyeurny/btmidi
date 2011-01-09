@@ -26,16 +26,24 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
 
+import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
 
-public class BluetoothSppManager {
+/**
+ * This class provides low-level functionality for managing a Bluetooth connection using SPP.  It is intended to be used by a
+ * service that implements higher-level functionality on top of SPP, such as {@link BluetoothMidiService}.
+ * 
+ *  @author Peter Brinkmann
+ */
+public class BluetoothSppConnection {
 
-	private static final String TAG = "BluetoothFoundation";
-	private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");  // Don't change this.
+	private static final String TAG = "BluetoothSppManager";
+	private static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // UUID for SPP; don't change this.
 
 	public static enum State {
 		NONE,
@@ -50,7 +58,12 @@ public class BluetoothSppManager {
 	private ConnectThread connectThread = null;
 	private ConnectedThread connectedThread = null;
 
-	public BluetoothSppManager(BluetoothSppReceiver receiver, int bufferSize) throws IOException {
+	/**
+	 * @param receiver a collection of callbacks for incoming Bluetooth messages as well as connection state updates
+	 * @param bufferSize buffer size for the input stream
+	 * @throws IOException thrown if Bluetooth is unavailable or disabled
+	 */
+	public BluetoothSppConnection(BluetoothSppReceiver receiver, int bufferSize) throws IOException {
 		btAdapter = BluetoothAdapter.getDefaultAdapter();
 		if (btAdapter == null) {
 			throw new IOException("Bluetooth unavailable");
@@ -62,23 +75,54 @@ public class BluetoothSppManager {
 		this.bufferSize = bufferSize;
 	}
 
+	/**
+	 * @return current connection state
+	 */
 	public State getState() {
 		return connectionState;
 	}
 
+	/**
+	 * Stop all threads and close SPP connection.
+	 */
 	public synchronized void stop() {
 		cancelThreads();
 		setState(State.NONE);
 	}
 
-	public synchronized void connect(String addr) throws IOException {
+	/**
+	 * Connect to a Bluetooth device with the given MAC address, using the standard UUID for SPP.
+	 * 
+	 * @param addr string representation of MAC address of the Bluetooth device
+	 * @throws IOException
+	 */
+	public void connect(String addr) throws IOException {
+		connect(addr, SPP_UUID);
+	}
+	
+	/**
+	 * Connect to a Bluetooth device with the given address and UUID.
+	 * 
+	 * @param addr string representation of MAC address of the Bluetooth device
+	 * @param uuid UUID of the Bluetooth device
+	 * @throws IOException
+	 */
+	public synchronized void connect(String addr, UUID uuid) throws IOException {
 		cancelThreads();
 		BluetoothDevice device = btAdapter.getRemoteDevice(addr);
-		connectThread = new ConnectThread(device);
+		connectThread = new ConnectThread(device, uuid);
 		connectThread.start();
 		setState(State.CONNECTING);
 	}
 
+	/**
+	 * Write bytes to the output stream of the SPP connection.
+	 * 
+	 * @param out buffer containing the bytes to be sent to the Bluetooth device
+	 * @param offset index of first byte to be sent
+	 * @param count number of bytes to be sent
+	 * @throws IOException
+	 */
 	public void write(byte[] out, int offset, int count) throws IOException {
 		ConnectedThread thread;
 		synchronized (this) {
@@ -132,9 +176,9 @@ public class BluetoothSppManager {
 		private final BluetoothSocket socket;
 		private final BluetoothDevice device;
 
-		private ConnectThread(BluetoothDevice device) throws IOException {
+		private ConnectThread(BluetoothDevice device, UUID uuid) throws IOException {
 			this.device = device;
-			this.socket = device.createRfcommSocketToServiceRecord(SPP_UUID);
+			this.socket = device.createRfcommSocketToServiceRecord(uuid);
 		}
 
 		@Override

@@ -16,28 +16,76 @@
 
 package com.noisepages.nettoyeur.bluetooth.midi;
 
-import android.bluetooth.BluetoothDevice;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
 
-public interface BluetoothMidiReceiver {
 
-	void onDeviceConnected(BluetoothDevice device);
+/**
+ * Callbacks for handling MIDI events and connection changes.  Note that these methods choose
+ * sanity over compliance with the MIDI standard, i.e., channel numbers start at 0, and pitch
+ * bend values are centered at 0.
+ * 
+ * @author Peter Brinkmann
+ */
+public interface BluetoothMidiReceiver extends BluetoothSppObserver {
 
-	void onConnectionFailed();
-
-	void onConnectionLost();
-
+	/**
+	 * Handles note off events.
+	 * 
+	 * @param channel starting at 0
+	 * @param key
+	 * @param velocity
+	 */
 	void onNoteOff(int channel, int key, int velocity);
 
+	/**
+	 * Handles note on events.
+	 * 
+	 * @param channel starting at 0
+	 * @param key
+	 * @param velocity
+	 */
 	void onNoteOn(int channel, int key, int velocity);
 
+	/**
+	 * Handles polyphonic aftertouch events.
+	 * 
+	 * @param channel starting at 0
+	 * @param key
+	 * @param velocity
+	 */
 	void onPolyAftertouch(int channel, int key, int velocity);
 
+	/**
+	 * Handles a control change message.
+	 * 
+	 * @param channel starting at 0
+	 * @param controller
+	 * @param value
+	 */
 	void onControlChange(int channel, int controller, int value);
 
+	/**
+	 * Handles a program change message.
+	 * 
+	 * @param channel starting at 0
+	 * @param program
+	 */
 	void onProgramChange(int channel, int program);
 
+	/**
+	 * Handles a channel aftertouch event.
+	 * 
+	 * @param channel starting at 0
+	 * @param velocity
+	 */
 	void onAftertouch(int channel, int velocity);
 
+	/**
+	 * Handles a pitch bend event.
+	 * 
+	 * @param channel starting at 0
+	 * @param value centered at 0, ranging from -8192 to 8191
+	 */
 	void onPitchBend(int channel, int value);
 
 }

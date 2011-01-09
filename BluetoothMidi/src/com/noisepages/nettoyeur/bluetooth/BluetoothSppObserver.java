@@ -18,12 +18,28 @@ package com.noisepages.nettoyeur.bluetooth;
 
 import android.bluetooth.BluetoothDevice;
 
+/**
+ * Callbacks for monitoring the state of a Bluetooth SPP connection.
+ * 
+ * @author Peter Brinkmann
+ */
 public interface BluetoothSppObserver {
 
+	/**
+	 * Called when a connection succeeds.
+	 * 
+	 * @param device the connected device
+	 */
 	void onDeviceConnected(BluetoothDevice device);
 
+	/**
+	 * Called when a connection fails.
+	 */
 	void onConnectionFailed();
 
+	/**
+	 * Called when a connection is lost or closed.
+	 */
 	void onConnectionLost();
 
 }

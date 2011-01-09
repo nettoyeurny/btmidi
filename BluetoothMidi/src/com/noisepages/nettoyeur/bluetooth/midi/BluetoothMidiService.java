@@ -17,6 +17,7 @@
 package com.noisepages.nettoyeur.bluetooth.midi;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import android.app.Service;
 import android.bluetooth.BluetoothDevice;
@@ -24,13 +25,20 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppManager;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppReceiver;
 
 
+/**
+ * Service for MIDI over Bluetooth using SPP.  Note that these methods choose sanity
+ * over compliance with the MIDI standard, i.e., channel numbers start at 0, and pitch
+ * bend values are centered at 0.
+ * 
+ * @author Peter Brinkmann
+ */
 public class BluetoothMidiService extends Service {
 
-	public static enum State {
+	private static enum State {
 		NOTE_OFF,
 		NOTE_ON,
 		POLY_TOUCH,
@@ -42,7 +50,7 @@ public class BluetoothMidiService extends Service {
 	}
 
 	private final Binder binder = new BluetoothMidiBinder();
-	private BluetoothSppManager btManager = null;
+	private BluetoothSppConnection btConnection = null;
 	private BluetoothMidiReceiver receiver = null;
 	private State midiState = State.NONE;
 	private int channel;
@@ -95,53 +103,141 @@ public class BluetoothMidiService extends Service {
 		super.onDestroy();
 	}
 	
+	/**
+	 * This method must be called before any other methods are called.  It is only a separate method so that client code will have an
+	 * opportunity to explicitly handle potential exceptions coming from the Bluetooth API.
+	 * 
+	 * @throws IOException thrown if Bluetooth is unavailable or disabled
+	 */
 	public void init() throws IOException {
 		stop();
-		btManager = new BluetoothSppManager(sppReceiver, 32);
+		btConnection = new BluetoothSppConnection(sppReceiver, 32);
 	}
 	
+	/**
+	 * Sets the receiver for handling events read from the Bluetooth input stream.  This method must be called before connecting to a
+	 * device.
+	 * 
+	 * @param receiver
+	 */
 	public void setReceiver(BluetoothMidiReceiver receiver) {
 		this.receiver = receiver;
 	}
 	
-	public synchronized void connect(String addr) throws IOException {
-		btManager.connect(addr);
+	/**
+	 * Attempts to connect to the given Bluetooth device.
+	 * 
+	 * @param addr String representation of the MAC address of the Bluetooth device
+	 * @throws IOException
+	 */
+	public void connect(String addr) throws IOException {
+		btConnection.connect(addr);
 	}
 	
-	public BluetoothSppManager.State getState() {
-		return btManager.getState();
+	/**
+	 * Attempts to connect to the given Bluetooth device.
+	 * 
+	 * @param addr String representation of the MAC address of the Bluetooth device
+	 * @param uuid UUID of the device
+	 * @throws IOException
+	 */
+	public void connect(String addr, UUID uuid) throws IOException {
+		btConnection.connect(addr, uuid);
+	}
+	
+	/**
+	 * @return the current state of the Bluetooth connection
+	 */
+	public BluetoothSppConnection.State getState() {
+		return btConnection.getState();
 	}
 
+	/**
+	 * Stops all Bluetooth threads and closes the Bluetooth connection.
+	 */
 	public void stop() {
-		if (btManager != null) {
-			btManager.stop();
+		if (btConnection != null) {
+			btConnection.stop();
 		}
 	}
 
+	/**
+	 * Sends a note off event to the Bluetooth device.
+	 * 
+	 * @param ch channel starting at 0
+	 * @param note
+	 * @param vel
+	 * @throws IOException
+	 */
 	public void sendNoteOff(int ch, int note, int vel) throws IOException {
 		write(0x80, ch, note, vel);
 	}
 
+	/**
+	 * Sends a note on event to the Bluetooth device.
+	 * 
+	 * @param ch channel starting at 0
+	 * @param note
+	 * @param vel
+	 * @throws IOException
+	 */
 	public void sendNoteOn(int ch, int note, int vel) throws IOException {
 		write(0x90, ch, note, vel);
 	}
 
+	/**
+	 * Sends a polyphonic aftertouch event to the Bluetooth device.
+	 * 
+	 * @param ch channel starting at 0
+	 * @param note
+	 * @param vel
+	 * @throws IOException
+	 */
 	public void sendPolyAftertouch(int ch, int note, int vel) throws IOException {
 		write(0xa0, ch, note, vel);
 	}
 
+	/**
+	 * Sends a control change event to the Bluetooth device.
+	 * 
+	 * @param ch channel starting at 0
+	 * @param ctl
+	 * @param val
+	 * @throws IOException
+	 */
 	public void sendControlChange(int ch, int ctl, int val) throws IOException {
 		write(0xb0, ch, ctl, val);
 	}
 
+	/**
+	 * Sends a program change event to the Bluetooth device.
+	 * 
+	 * @param ch channel starting at 0
+	 * @param pgm
+	 * @throws IOException
+	 */
 	public void sendProgramChange(int ch, int pgm) throws IOException {
 		write(0xc0, ch, pgm);
 	}
 
+	/**
+	 * Sends a channel aftertouch event to the Bluetooth device.
+	 * 
+	 * @param ch channel starting at 0
+	 * @param vel
+	 * @throws IOException
+	 */
 	public void sendAftertouch(int ch, int vel) throws IOException {
 		write(0xd0, ch, vel);
 	}
 
+	/**
+	 * Sends a pitch bend event to the Bluetooth device.
+	 * 
+	 * @param ch channel starting at 0
+	 * @param val pitch bend value centered at 0, ranging from -8192 to 8191
+	 * @throws IOException
+	 */
 	public void sendPitchbend(int ch, int val) throws IOException {
 		val += 8192;
 		write(0xe0, ch, (val & 0x7f), (val >> 7));
@@ -160,7 +256,7 @@ public class BluetoothMidiService extends Service {
 	}
 
 	private void writeBytes(byte... out) throws IOException {
-		btManager.write(out, 0, out.length);
+		btConnection.write(out, 0, out.length);
 	}
 
 	private void processByte(int b) {

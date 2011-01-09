@@ -11,7 +11,7 @@ package com.noisepages.nettoyeur.mididemo;
 
 import java.io.IOException;
 
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppManager;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiReceiver;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
@@ -228,7 +228,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.connect_item:
-			if (midiService.getState() == BluetoothSppManager.State.NONE) {
+			if (midiService.getState() == BluetoothSppConnection.State.NONE) {
 				startActivityForResult(new Intent(this, DeviceListActivity.class), CONNECT);
 			} else {
 				midiService.stop();

@@ -16,16 +16,20 @@
 
 package com.noisepages.nettoyeur.bluetooth;
 
-import android.bluetooth.BluetoothDevice;
 
-public interface BluetoothSppReceiver {
+/**
+ * Callback for handling raw input from an SPP connection.
+ * 
+ * @author Peter Brinkmann
+ */
+public interface BluetoothSppReceiver extends BluetoothSppObserver {
 
-	void onDeviceConnected(BluetoothDevice device);
-
-	void onConnectionFailed();
-
-	void onConnectionLost();
-
+	/**
+	 * Processes the given buffer.
+	 * 
+	 * @param nBytes number of bytes to be processed, started at the beginning of the buffer
+	 * @param buffer buffer to be processed
+	 */
 	void onBytesReceived(int nBytes, byte[] buffer);
 
 }

@@ -36,9 +36,12 @@ import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 
 
+/**
+ * A simple activity that offers the user a list of paired Bluetooth devices to choose from.
+ */
 public class DeviceListActivity extends Activity {
 
-	public static final String EXTRA_DEVICE_ADDRESS = "device_address";
+	public static final String DEVICE_ADDRESS = "device_address";
 
 	private BluetoothAdapter btAdapter;
 	private ArrayAdapter<String> pairedDevicesAdapter;
@@ -78,7 +81,7 @@ public class DeviceListActivity extends Activity {
 				String info = ((TextView) v).getText().toString();
 				String address = info.substring(info.length() - 17);
 				Intent intent = new Intent();
-				intent.putExtra(EXTRA_DEVICE_ADDRESS, address);
+				intent.putExtra(DEVICE_ADDRESS, address);
 				setResult(Activity.RESULT_OK, intent);
 			}
 			finish();
