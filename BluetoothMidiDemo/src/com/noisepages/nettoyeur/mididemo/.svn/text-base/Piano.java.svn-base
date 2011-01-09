@@ -1,0 +1,212 @@
+/**
+ * This Project is come from ZhangFL (eoeAndroid flylyke http://www.eoeandroid.com/space.php?uid=1178)
+ * This Prorject will go on for Android Develop.
+ * Update to Google Code for open source.
+ */
+package com.javacc.android.piano;
+
+import android.app.Activity;
+import android.media.MediaPlayer;
+import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.Toast;
+
+/**
+ * Piano Activity<br />
+ * Update by vhly[FR]
+ *
+ * @author ZhangFL
+ * @version 1.0 Base ZhangFL's version, Update IDEA Project to IDEA9.0
+ */
+public class Piano extends Activity implements View.OnTouchListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
+
+    // Piano Key
+
+    /**
+     * Piano Button audio Player
+     */
+    private MediaPlayer mediaPlayer01;
+
+    private static final String errMsg = "Error!";
+    private static final String releaseMsg = "Release!";
+
+    @Override
+    protected void onCreate(Bundle bundle) {
+        super.onCreate(bundle);
+        setContentView(R.layout.main);
+
+        mediaPlayer01 = new MediaPlayer();
+//        mediaPlayer01 = MediaPlayer.create(Piano.this, R.raw.white1);
+        // set Piano Key to vars
+        // User view 's tag data to store resource for touch event, and remove any dup inner class
+        ImageButton imageButton_white1 = (ImageButton) findViewById(R.id.white1);
+        //   play            down img              up img
+        imageButton_white1.setTag(new int[]{R.raw.white1, R.drawable.whiteback1, R.drawable.white1});
+        ImageButton imageButton_white2 = (ImageButton) findViewById(R.id.white2);
+        imageButton_white2.setTag(new int[]{R.raw.white2, R.drawable.whiteback2, R.drawable.white2});
+
+        ImageButton imageButton_white3 = (ImageButton) findViewById(R.id.white3);
+        imageButton_white3.setTag(new int[]{R.raw.white3, R.drawable.whiteback3, R.drawable.white3});
+
+        ImageButton imageButton_white4 = (ImageButton) findViewById(R.id.white4);
+        imageButton_white4.setTag(new int[]{R.raw.white4, R.drawable.whiteback4, R.drawable.white4});
+
+        ImageButton imageButton_white5 = (ImageButton) findViewById(R.id.white5);
+        imageButton_white5.setTag(new int[]{R.raw.white5, R.drawable.whiteback5, R.drawable.white5});
+
+        ImageButton imageButton_white6 = (ImageButton) findViewById(R.id.white6);
+        imageButton_white6.setTag(new int[]{R.raw.white6, R.drawable.whiteback6, R.drawable.white6});
+
+        ImageButton imageButton_white7 = (ImageButton) findViewById(R.id.white7);
+        imageButton_white7.setTag(new int[]{R.raw.white7, R.drawable.whiteback7, R.drawable.white7});
+
+        ImageButton imageButton_white8 = (ImageButton) findViewById(R.id.white8);
+        imageButton_white8.setTag(new int[]{R.raw.white8, R.drawable.whiteback8, R.drawable.white8});
+
+        ImageButton imageButton_black1 = (ImageButton) findViewById(R.id.black1);
+        imageButton_black1.setTag(new int[]{R.raw.black1, R.drawable.black1, R.drawable.black1});
+
+        ImageButton imageButton_black2 = (ImageButton) findViewById(R.id.black2);
+        imageButton_black2.setTag(new int[]{R.raw.black2, R.drawable.black2, R.drawable.black2});
+
+        ImageButton imageButton_black3 = (ImageButton) findViewById(R.id.black3);
+        imageButton_black3.setTag(new int[]{R.raw.black3, R.drawable.black3, R.drawable.black3});
+
+        ImageButton imageButton_black4 = (ImageButton) findViewById(R.id.black4);
+        imageButton_black4.setTag(new int[]{R.raw.black4, R.drawable.black4, R.drawable.black4});
+
+        ImageButton imageButton_black5 = (ImageButton) findViewById(R.id.black5);
+        imageButton_black5.setTag(new int[]{R.raw.black5, R.drawable.black5, R.drawable.black5});
+
+
+        imageButton_white1.setOnTouchListener(this);
+
+        imageButton_white2.setOnTouchListener(this);
+//
+        imageButton_white3.setOnTouchListener(this);
+
+        imageButton_white4.setOnTouchListener(this);
+
+        imageButton_white5.setOnTouchListener(this);
+
+        imageButton_white6.setOnTouchListener(this);
+
+        imageButton_white7.setOnTouchListener(this);
+
+        imageButton_white8.setOnTouchListener(this);
+
+        imageButton_black1.setOnTouchListener(this);
+
+        imageButton_black2.setOnTouchListener(this);
+
+        imageButton_black3.setOnTouchListener(this);
+
+        imageButton_black4.setOnTouchListener(this);
+
+        imageButton_black5.setOnTouchListener(this);
+//
+//
+        mediaPlayer01.setOnCompletionListener(this);
+
+        mediaPlayer01.setOnErrorListener(this);
+    }
+
+    // ------- MediaPlayer Interface -----------
+
+    public void onCompletion(MediaPlayer mediaPlayer) {
+        mediaPlayer01.release();
+        mediaPlayer01 = null;
+        Toast.makeText(Piano.this, releaseMsg, Toast.LENGTH_SHORT).show();
+    }
+
+    public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
+        try {
+            mediaPlayer01.release();
+            Toast.makeText(Piano.this, errMsg, Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // ------- MediaPlayer Interface -----------
+
+    // ------- TouchListener Interface -----------
+
+    /**
+     * Touch Handle
+     *
+     * @param view        event for view, in this app, when piano key touch, invoke this method, view is ImageButton
+     * @param motionEvent touch event
+     * @return process finish?
+     */
+    public boolean onTouch(View view, MotionEvent motionEvent) {
+        int action = motionEvent.getAction();
+        boolean bret = false;
+        if (view instanceof ImageButton) {  // if is ImageButton then process
+            ImageButton imgBtn = (ImageButton) view;
+            bret = pianoKeyHandle(imgBtn, action);
+        }
+        return bret;
+    }
+
+    /**
+     * process piano key touch
+     *
+     * @param imgBtn who is touched
+     * @param action touch up or touch down
+     * @return process finish?
+     */
+    private boolean pianoKeyHandle(ImageButton imgBtn, int action) {
+        boolean bret = false;
+        Object obj = imgBtn.getTag(); // imgBtn 's tag is set for resource load, the format is [rawaudioID,downImageID,normalImageID]
+        if (obj != null) {
+            if (obj instanceof int[]) {
+                int[] tag = (int[]) obj;
+                if (tag.length == 3) {     // above check tag is valid
+                    if (action == MotionEvent.ACTION_DOWN) {
+                        play(tag[0]);        // play sound
+                        imgBtn.setImageResource(tag[1]);  // set down image, the black is same between down and up
+                    } else if (action == MotionEvent.ACTION_UP) {
+                        imgBtn.setImageResource(tag[2]);
+                    }
+                }
+            }
+        }
+        return bret;
+    }
+    // ------- TouchListener Interface -----------
+
+    //-------------------------------------------------------------------------------------
+
+    /**
+     * Play the resource
+     *
+     * @param resource audio resource id
+     */
+    private void play(int resource) {
+        try {
+            mediaPlayer01.release();
+            mediaPlayer01 = MediaPlayer.create(Piano.this, resource);
+            mediaPlayer01.start();
+        } catch (Exception e) {
+            Toast.makeText(Piano.this, errMsg + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayer01 != null) {
+            mediaPlayer01.release();
+            mediaPlayer01 = null;
+        }
+
+    }
+
+}
+
+

@@ -198,6 +198,7 @@ public class MidiTest extends Activity implements OnClickListener {
 		}
 	}
 
+	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		switch (requestCode) {
 		case CONNECT:
