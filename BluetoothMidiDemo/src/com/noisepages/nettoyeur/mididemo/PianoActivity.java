@@ -94,6 +94,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 			}
 		}
 
+		// We won't use the remaining callbacks in this demo.
 		@Override public void onProgramChange(int channel, int program) {}
 		@Override public void onPolyAftertouch(int channel, int key, int velocity) {}
 		@Override public void onPitchBend(int channel, int value) {}
@@ -246,7 +247,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 			if (resultCode == Activity.RESULT_OK) {
 				String address = data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS);
 				try {
-					midiService.connect(address);
+					midiService.connect(address, new Intent(this, PianoActivity.class), "Select to return to BluetoothMidiDemo.");
 				} catch (IOException e) {
 					toast(e.getMessage());
 				}                

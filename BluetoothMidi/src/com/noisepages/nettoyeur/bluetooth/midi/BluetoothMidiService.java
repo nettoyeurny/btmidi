@@ -17,8 +17,9 @@
 package com.noisepages.nettoyeur.bluetooth.midi;
 
 import java.io.IOException;
-import java.util.UUID;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
@@ -27,6 +28,7 @@ import android.os.IBinder;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppReceiver;
+import com.noisepages.nettoyeur.bluetooth.R;
 
 
 /**
@@ -38,6 +40,9 @@ import com.noisepages.nettoyeur.bluetooth.BluetoothSppReceiver;
  */
 public class BluetoothMidiService extends Service {
 
+	private static final String TAG = "BluetoothMidiService";
+	private static final int ID = 1;
+	
 	private static enum State {
 		NOTE_OFF,
 		NOTE_ON,
@@ -55,7 +60,7 @@ public class BluetoothMidiService extends Service {
 	private State midiState = State.NONE;
 	private int channel;
 	private int firstByte;
-	
+
 	private final BluetoothSppReceiver sppReceiver = new BluetoothSppReceiver() {
 		@Override
 		public void onBytesReceived(int nBytes, byte[] buffer) {
@@ -66,11 +71,13 @@ public class BluetoothMidiService extends Service {
 
 		@Override
 		public void onConnectionFailed() {
+			stopForeground(true);
 			receiver.onConnectionFailed();
 		}
 
 		@Override
 		public void onConnectionLost() {
+			stopForeground(true);
 			receiver.onConnectionLost();
 		}
 
@@ -102,7 +109,7 @@ public class BluetoothMidiService extends Service {
 		stop();
 		super.onDestroy();
 	}
-	
+
 	/**
 	 * This method must be called before any other methods are called.  It is only a separate method so that client code will have an
 	 * opportunity to explicitly handle potential exceptions coming from the Bluetooth API.
@@ -113,7 +120,7 @@ public class BluetoothMidiService extends Service {
 		stop();
 		btConnection = new BluetoothSppConnection(sppReceiver, 32);
 	}
-	
+
 	/**
 	 * Sets the receiver for handling events read from the Bluetooth input stream.  This method must be called before connecting to a
 	 * device.
@@ -123,7 +130,7 @@ public class BluetoothMidiService extends Service {
 	public void setReceiver(BluetoothMidiReceiver receiver) {
 		this.receiver = receiver;
 	}
-	
+
 	/**
 	 * Attempts to connect to the given Bluetooth device.
 	 * 
@@ -133,18 +140,24 @@ public class BluetoothMidiService extends Service {
 	public void connect(String addr) throws IOException {
 		btConnection.connect(addr);
 	}
-	
+
 	/**
-	 * Attempts to connect to the given Bluetooth device.
+	 * Attempts to connect to the given Bluetooth device with foreground privileges.
 	 * 
 	 * @param addr String representation of the MAC address of the Bluetooth device
-	 * @param uuid UUID of the device
-	 * @throws IOException
+	 * @param intent intent to be wrapped in a pending intent and fired when the user selects the notification
+	 * @param description description of the notification
+	 * @throws IOException 
 	 */
-	public void connect(String addr, UUID uuid) throws IOException {
-		btConnection.connect(addr, uuid);
+	public void connect(String addr, Intent intent, String description) throws IOException {
+		PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0, intent, 0);
+		Notification notification = new Notification(R.drawable.din5, TAG, System.currentTimeMillis());
+		notification.setLatestEventInfo(this, TAG, description, pi);
+		notification.flags |= Notification.FLAG_ONGOING_EVENT;
+		startForeground(ID, notification);
+		btConnection.connect(addr);
 	}
-	
+
 	/**
 	 * @return the current state of the Bluetooth connection
 	 */
@@ -159,6 +172,7 @@ public class BluetoothMidiService extends Service {
 		if (btConnection != null) {
 			btConnection.stop();
 		}
+		stopForeground(true);
 	}
 
 	/**

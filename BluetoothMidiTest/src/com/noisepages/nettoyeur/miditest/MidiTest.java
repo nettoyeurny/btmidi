@@ -22,7 +22,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppManager;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiReceiver;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
@@ -173,7 +173,7 @@ public class MidiTest extends Activity implements OnClickListener {
 	public void onClick(View v) {
 		switch (v.getId()) {
 		case R.id.connect_button:
-			if (midiService.getState() == BluetoothSppManager.State.NONE) {
+			if (midiService.getState() == BluetoothSppConnection.State.NONE) {
 				startActivityForResult(new Intent(this, DeviceListActivity.class), CONNECT);
 			} else {
 				midiService.stop();
@@ -201,7 +201,7 @@ public class MidiTest extends Activity implements OnClickListener {
 		switch (requestCode) {
 		case CONNECT:
 			if (resultCode == Activity.RESULT_OK) {
-				String address = data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+				String address = data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS);
 				try {
 					midiService.connect(address);
 				} catch (IOException e) {
