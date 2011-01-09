@@ -244,7 +244,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		switch (requestCode) {
 		case CONNECT:
 			if (resultCode == Activity.RESULT_OK) {
-				String address = data.getExtras().getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+				String address = data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS);
 				try {
 					midiService.connect(address);
 				} catch (IOException e) {
