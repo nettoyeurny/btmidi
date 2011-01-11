@@ -11,11 +11,6 @@ package com.noisepages.nettoyeur.mididemo;
 
 import java.io.IOException;
 
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
-import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
-import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiReceiver;
-import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
-
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
@@ -23,7 +18,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -32,6 +26,10 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
+import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
+import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiReceiver;
+import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
 
 public class PianoActivity extends Activity implements View.OnTouchListener {
 
@@ -39,11 +37,12 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 	private static final int CONNECT = 1;
 	private boolean touchState = false;
 	private ImageButton[] keys;
-	private final int[] imageUp = new int[] { R.drawable.white1, R.drawable.black1,
-			R.drawable.white2, R.drawable.black2, R.drawable.white3,
-			R.drawable.white4, R.drawable.black3, R.drawable.white5,
-			R.drawable.black4, R.drawable.white6, R.drawable.black5,
-			R.drawable.white7, R.drawable.white8 };
+	private Toast toast;
+	private final int[] imageUp = new int[] { R.drawable.white1,
+			R.drawable.black1, R.drawable.white2, R.drawable.black2,
+			R.drawable.white3, R.drawable.white4, R.drawable.black3,
+			R.drawable.white5, R.drawable.black4, R.drawable.white6,
+			R.drawable.black5, R.drawable.white7, R.drawable.white8 };
 	private final int[] imageDown = new int[] { R.drawable.white11,
 			R.drawable.black11, R.drawable.white21, R.drawable.black21,
 			R.drawable.white31, R.drawable.white41, R.drawable.black31,
@@ -75,37 +74,55 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 				runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
-						if (velocity > 0) keyDown(index);
-						else keyUp(index);
-					}	
+						if (velocity > 0)
+							keyDown(index);
+						else
+							keyUp(index);
+					}
 				});
 			}
 		}
 
-		@Override public void onNoteOff(int channel, int key, int velocity) {
+		@Override
+		public void onNoteOff(int channel, int key, int velocity) {
 			final int index = key - 60;
-			if (index >=0 && index < 13) {
+			if (index >= 0 && index < 13) {
 				runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
 						keyUp(index);
-					}	
+					}
 				});
 			}
 		}
 
 		// We won't use the remaining callbacks in this demo.
-		@Override public void onProgramChange(int channel, int program) {}
-		@Override public void onPolyAftertouch(int channel, int key, int velocity) {}
-		@Override public void onPitchBend(int channel, int value) {}
-		@Override public void onControlChange(int channel, int controller, int value) {}
-		@Override public void onAftertouch(int channel, int velocity) {}
+		@Override
+		public void onProgramChange(int channel, int program) {
+		}
+
+		@Override
+		public void onPolyAftertouch(int channel, int key, int velocity) {
+		}
+
+		@Override
+		public void onPitchBend(int channel, int value) {
+		}
+
+		@Override
+		public void onControlChange(int channel, int controller, int value) {
+		}
+
+		@Override
+		public void onAftertouch(int channel, int velocity) {
+		}
 	};
 
 	private final ServiceConnection connection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName name, IBinder service) {
-			midiService = ((BluetoothMidiService.BluetoothMidiBinder)service).getService();
+			midiService = ((BluetoothMidiService.BluetoothMidiBinder) service)
+					.getService();
 			try {
 				midiService.init(receiver);
 			} catch (IOException e) {
@@ -124,7 +141,9 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Toast.makeText(getApplicationContext(), TAG + ": " + msg, Toast.LENGTH_SHORT).show();
+				toast.cancel();
+				toast.setText(TAG + ": " + msg);
+				toast.show();
 			}
 		});
 	}
@@ -132,6 +151,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 	@Override
 	protected void onCreate(Bundle bundle) {
 		super.onCreate(bundle);
+		toast = Toast.makeText(getApplicationContext(), "message", Toast.LENGTH_SHORT);
 		setContentView(R.layout.main);
 		ImageButton white1 = (ImageButton) findViewById(R.id.white1);
 		ImageButton white2 = (ImageButton) findViewById(R.id.white2);
@@ -160,11 +180,12 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		black4.setTag(8);
 		black5.setTag(10);
 		keys = new ImageButton[] { white1, black1, white2, black2, white3,
-				white4, black3, white5, black4, white6, black5, white7, white8};
-		for(ImageButton key : keys) {
+				white4, black3, white5, black4, white6, black5, white7, white8 };
+		for (ImageButton key : keys) {
 			key.setOnTouchListener(this);
 		}
-		bindService(new Intent(this, BluetoothMidiService.class), connection, BIND_AUTO_CREATE);
+		bindService(new Intent(this, BluetoothMidiService.class), connection,
+				BIND_AUTO_CREATE);
 	}
 
 	@Override
@@ -183,10 +204,12 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 	}
 
 	public boolean onTouch(View view, MotionEvent motionEvent) {
-		if (!(view instanceof ImageButton)) return false;
+		if (!(view instanceof ImageButton))
+			return false;
 		ImageButton key = (ImageButton) view;
 		Object tag = key.getTag();
-		if (tag == null || !(tag instanceof Integer)) return false;
+		if (tag == null || !(tag instanceof Integer))
+			return false;
 		int index = (Integer) tag;
 		int action = motionEvent.getAction();
 		if (action == MotionEvent.ACTION_DOWN && !touchState) {
@@ -194,15 +217,15 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 			try {
 				midiService.sendNoteOn(0, index + 60, 64);
 			} catch (IOException e) {
-				Log.e(TAG, e.getMessage());
+				toast(e.getMessage());
 			}
 			keyDown(index);
-		} else if (action == MotionEvent.ACTION_UP  && touchState) {
+		} else if (action == MotionEvent.ACTION_UP && touchState) {
 			touchState = false;
 			try {
 				midiService.sendNoteOff(0, index + 60, 64);
 			} catch (IOException e) {
-				Log.e(TAG, e.getMessage());
+				toast(e.getMessage());
 			}
 			keyUp(index);
 		}
@@ -229,7 +252,8 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		switch (item.getItemId()) {
 		case R.id.connect_item:
 			if (midiService.getState() == BluetoothSppConnection.State.NONE) {
-				startActivityForResult(new Intent(this, DeviceListActivity.class), CONNECT);
+				startActivityForResult(new Intent(this,
+						DeviceListActivity.class), CONNECT);
 			} else {
 				midiService.stop();
 			}
@@ -244,12 +268,15 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		switch (requestCode) {
 		case CONNECT:
 			if (resultCode == Activity.RESULT_OK) {
-				String address = data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS);
+				String address = data.getExtras().getString(
+						DeviceListActivity.DEVICE_ADDRESS);
 				try {
-					midiService.connect(address, new Intent(this, PianoActivity.class), "Select to return to BluetoothMidiDemo.");
+					midiService.connect(address, new Intent(this,
+							PianoActivity.class),
+							"Select to return to BluetoothMidiDemo.");
 				} catch (IOException e) {
 					toast(e.getMessage());
-				}                
+				}
 			}
 			break;
 		}
