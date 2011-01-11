@@ -111,23 +111,15 @@ public class BluetoothMidiService extends Service {
 	}
 
 	/**
-	 * This method must be called before any other methods are called.  It is only a separate method so that client code will have an
-	 * opportunity to explicitly handle potential exceptions coming from the Bluetooth API.
-	 * 
-	 * @throws IOException thrown if Bluetooth is unavailable or disabled
-	 */
-	public void init() throws IOException {
-		stop();
-		btConnection = new BluetoothSppConnection(sppReceiver, 32);
-	}
-
-	/**
-	 * Sets the receiver for handling events read from the Bluetooth input stream.  This method must be called before connecting to a
-	 * device.
+	 * This method must be called before any other methods are called.  It sets the receiver for
+	 * handling events read from the Bluetooth input stream.
 	 * 
 	 * @param receiver
+	 * @throws IOException thrown if Bluetooth is unavailable or disabled
 	 */
-	public void setReceiver(BluetoothMidiReceiver receiver) {
+	public void init(BluetoothMidiReceiver receiver) throws IOException {
+		stop();
+		btConnection = new BluetoothSppConnection(sppReceiver, 32);
 		this.receiver = receiver;
 	}
 

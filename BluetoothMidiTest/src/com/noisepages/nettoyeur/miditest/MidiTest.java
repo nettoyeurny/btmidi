@@ -114,8 +114,7 @@ public class MidiTest extends Activity implements OnClickListener {
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			midiService = ((BluetoothMidiService.BluetoothMidiBinder)service).getService();
 			try {
-				midiService.init();
-				midiService.setReceiver(receiver);
+				midiService.init(receiver);
 			} catch (IOException e) {
 				toast("MIDI not available");
 				finish();
