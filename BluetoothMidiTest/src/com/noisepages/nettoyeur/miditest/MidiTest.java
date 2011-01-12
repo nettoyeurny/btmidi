@@ -39,11 +39,17 @@ public class MidiTest extends Activity implements OnClickListener {
 
 	private BluetoothMidiService midiService = null;
 
+	private Toast toast = null;
+	
 	private void toast(final String msg) {
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Toast.makeText(getApplicationContext(), TAG + ": " + msg, Toast.LENGTH_SHORT).show();
+				if (toast == null) {
+					toast = Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT);
+				}
+				toast.setText(TAG + ": " + msg);
+				toast.show();
 			}
 		});
 	}

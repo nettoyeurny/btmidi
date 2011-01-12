@@ -37,7 +37,6 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 	private static final int CONNECT = 1;
 	private boolean touchState = false;
 	private ImageButton[] keys;
-	private Toast toast;
 	private final int[] imageUp = new int[] { R.drawable.white1,
 			R.drawable.black1, R.drawable.white2, R.drawable.black2,
 			R.drawable.white3, R.drawable.white4, R.drawable.black3,
@@ -137,11 +136,15 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		}
 	};
 
+	private Toast toast = null;
+	
 	private void toast(final String msg) {
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				toast.cancel();
+				if (toast == null) {
+					toast = Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT);
+				}
 				toast.setText(TAG + ": " + msg);
 				toast.show();
 			}
@@ -151,7 +154,6 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 	@Override
 	protected void onCreate(Bundle bundle) {
 		super.onCreate(bundle);
-		toast = Toast.makeText(getApplicationContext(), "message", Toast.LENGTH_SHORT);
 		setContentView(R.layout.main);
 		ImageButton white1 = (ImageButton) findViewById(R.id.white1);
 		ImageButton white2 = (ImageButton) findViewById(R.id.white2);
