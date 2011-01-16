@@ -217,7 +217,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		if (action == MotionEvent.ACTION_DOWN && !touchState) {
 			touchState = true;
 			try {
-				midiService.sendNoteOn(0, index + 60, 64);
+				midiService.sendNoteOn(0, index + 60, 100);
 			} catch (IOException e) {
 				toast(e.getMessage());
 			}
