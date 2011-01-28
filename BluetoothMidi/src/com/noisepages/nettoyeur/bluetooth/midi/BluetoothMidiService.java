@@ -249,6 +249,16 @@ public class BluetoothMidiService extends Service {
 		write(0xe0, ch, (val & 0x7f), (val >> 7));
 	}
 
+	/**
+	 * Sends a raw MIDI byte to the Bluetooth device.
+	 * 
+	 * @param value MIDI byte to send to device; only the LSB will be sent
+	 * @throws IOException
+	 */
+	public void sendRawByte(int value) throws IOException {
+		writeBytes((byte) value);
+	}
+
 	private void write(int msg, int ch, int a) throws IOException {
 		writeBytes(firstByte(msg, ch), (byte) a);
 	}
@@ -268,8 +278,12 @@ public class BluetoothMidiService extends Service {
 	private void processByte(int b) {
 		if (b < 0) {
 			midiState = State.values()[(b >> 4) & 0x07];
-			channel = b & 0x0f;
-			firstByte = -1;
+			if (midiState != State.NONE) {
+				channel = b & 0x0f;
+				firstByte = -1;
+			} else {
+				receiver.onRawByte(b);
+			}
 		} else {
 			switch (midiState) {
 			case NOTE_OFF:
@@ -319,6 +333,7 @@ public class BluetoothMidiService extends Service {
 				}
 				break;
 			default:
+				receiver.onRawByte(b);
 				break;
 			}
 		}

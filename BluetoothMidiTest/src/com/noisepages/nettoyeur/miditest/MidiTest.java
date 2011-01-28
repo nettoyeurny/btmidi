@@ -113,6 +113,11 @@ public class MidiTest extends Activity implements OnClickListener {
 		public void onProgramChange(int channel, int program) {
 			post("program change: " + channel + ", " + program);
 		}
+
+		@Override
+		public void onRawByte(int value) {
+			post("raw byte: " + Integer.toHexString(value));
+		}
 	};
 
 	private final ServiceConnection connection = new ServiceConnection() {

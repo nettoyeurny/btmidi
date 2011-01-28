@@ -115,6 +115,10 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		@Override
 		public void onAftertouch(int channel, int velocity) {
 		}
+
+		@Override
+		public void onRawByte(int value) {
+		}
 	};
 
 	private final ServiceConnection connection = new ServiceConnection() {

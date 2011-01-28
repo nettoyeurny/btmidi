@@ -88,4 +88,17 @@ public interface BluetoothMidiReceiver extends BluetoothSppObserver {
 	 */
 	void onPitchBend(int channel, int value);
 
+	/**
+	 * Handles a raw byte; a raw byte is a byte that is received from the Bluetooth device but
+	 * doesn't belong to any of the channel messages that are explicitly handled by this
+	 * interface.
+	 * 
+ 	 * The idea is that we don't want to burden this basic interface with support for obscure
+	 * system messages, but at the same time we don't want to hide any MIDI events from client
+	 * code.  If you need system messages, you can assemble them, one byte at a time, from
+	 * successive calls to this method.
+	 * 
+	 * @param value
+	 */
+	void onRawByte(int value);
 }
