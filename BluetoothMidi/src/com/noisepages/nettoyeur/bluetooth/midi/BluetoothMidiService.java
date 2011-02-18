@@ -130,6 +130,9 @@ public class BluetoothMidiService extends Service {
 	 * @throws IOException
 	 */
 	public void connect(String addr) throws IOException {
+		if (btConnection == null) {
+			throw new IllegalStateException("BluetoothMidiService has not been initialized");
+		}
 		btConnection.connect(addr);
 	}
 
@@ -142,18 +145,21 @@ public class BluetoothMidiService extends Service {
 	 * @throws IOException 
 	 */
 	public void connect(String addr, Intent intent, String description) throws IOException {
+		connect(addr);
 		PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0, intent, 0);
 		Notification notification = new Notification(R.drawable.din5, TAG, System.currentTimeMillis());
 		notification.setLatestEventInfo(this, TAG, description, pi);
 		notification.flags |= Notification.FLAG_ONGOING_EVENT;
 		startForeground(ID, notification);
-		btConnection.connect(addr);
 	}
 
 	/**
 	 * @return the current state of the Bluetooth connection
 	 */
 	public BluetoothSppConnection.State getState() {
+		if (btConnection == null) {
+			throw new IllegalStateException("BluetoothMidiService has not been initialized");
+		}
 		return btConnection.getState();
 	}
 
@@ -272,6 +278,9 @@ public class BluetoothMidiService extends Service {
 	}
 
 	private void writeBytes(byte... out) throws IOException {
+		if (btConnection == null) {
+			throw new IllegalStateException("BluetoothMidiService has not been initialized");
+		}
 		btConnection.write(out, 0, out.length);
 	}
 
