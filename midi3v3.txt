@@ -1,0 +1,7 @@
+The 3.3V MIDI gadget has three connectors, as follows:
+
+  * 2 pins - Power supply: VIN (1V - 3.3V), GND (left to right)
+  * 3 pins - Stepup voltage converter: GND, VOUT, VIN
+  * 4 pins - Bluetooth module: RX, TX, GND, VIN
+
+The attached picture shows the gadget with all components plugged in.
