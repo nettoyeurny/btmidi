@@ -32,6 +32,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.os.Process;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -243,7 +244,7 @@ public class BluetoothMidiPlayerService extends Service {
 				}
 			}
 		}
-		handlerThread = new HandlerThread(TAG);
+		handlerThread = new HandlerThread(TAG, Process.THREAD_PRIORITY_AUDIO);
 		handlerThread.start();
 		MidiRunnable midiRunnable = new MidiRunnable(events, handlerThread);
 		midiRunnable.scheduleNext();
