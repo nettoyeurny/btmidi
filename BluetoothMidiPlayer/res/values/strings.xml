@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BluetoothMidiPlayer</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string><string name="play">Play</string>
+    <string name="pause">Pause</string><string name="rewind">Rewind</string>
+    
+    <string name="loading">Loading...</string>
+    
+    <string name="next">Next song:</string>
+</resources>

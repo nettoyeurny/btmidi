@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	package="com.noisepages.nettoyeur.midi.player" android:versionCode="1"
+	android:versionName="1.0">
+	<uses-sdk android:minSdkVersion="7" />
+	<uses-permission android:name="android.permission.BLUETOOTH"></uses-permission>
+	<uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
+	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
+	<application android:icon="@drawable/icon" android:label="@string/app_name">
+		<activity android:name="BluetoothMidiPlayerActivity" android:label="@string/app_name" android:screenOrientation="portrait">
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.DEFAULT"/>
+				<data android:mimeType="audio/midi"/>
+            </intent-filter>
+        </activity>
+		<activity android:name="com.noisepages.nettoyeur.bluetooth.DeviceListActivity"
+			android:label="@string/select_device" android:theme="@android:style/Theme.Dialog" android:screenOrientation="portrait">
+		</activity>
+		<service android:name="BluetoothMidiPlayerService" /> 
+	</application>
+</manifest>
