@@ -63,6 +63,7 @@ public class BluetoothMidiPlayerService extends Service {
 	private volatile WakeLock wakeLock;
 
 	private class MidiRunnable implements Runnable {
+		private byte[] buffer;
 		private CompoundMidiEvent currentEvent;
 		private final long t0;
 		private final Iterator<CompoundMidiEvent> events;
@@ -76,13 +77,13 @@ public class BluetoothMidiPlayerService extends Service {
 		}
 		
 		void scheduleNext() {
+			buffer = currentEvent.midiBytes;
 			handler.postAtTime(this, t0 + currentEvent.timeInMillis);
 		}
 
 		@Override
 		public void run() {
 			try {
-				byte[] buffer = currentEvent.midiBytes;
 				btConnection.write(buffer, 0, buffer.length);
 				if (events.hasNext()) {
 					currentEvent = events.next();
