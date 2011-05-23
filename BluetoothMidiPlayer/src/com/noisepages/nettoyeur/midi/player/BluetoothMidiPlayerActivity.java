@@ -30,6 +30,7 @@ import android.os.IBinder;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,8 +49,8 @@ public class BluetoothMidiPlayerActivity extends Activity implements BluetoothMi
 
 	private BluetoothMidiPlayerService midiService = null;
 	private Button connectButton;
-	private Button playButton;
-	private Button rewindButton;
+	private ImageButton playButton;
+	private ImageButton rewindButton;
 	private TextView uriView;
 	private Toast toast = null;
 
@@ -94,8 +95,8 @@ public class BluetoothMidiPlayerActivity extends Activity implements BluetoothMi
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 		connectButton = (Button) findViewById(R.id.connectButton);
-		playButton = (Button) findViewById(R.id.playButton);
-		rewindButton = (Button) findViewById(R.id.rewindButton);
+		playButton = (ImageButton) findViewById(R.id.playButton);
+		rewindButton = (ImageButton) findViewById(R.id.rewindButton);
 		uriView = (TextView) findViewById(R.id.uriView);
 		connectButton.setOnClickListener(this);
 		playButton.setOnClickListener(this);
@@ -189,7 +190,7 @@ public class BluetoothMidiPlayerActivity extends Activity implements BluetoothMi
 				connectButton.setText(connected ? R.string.disconnect : R.string.connect);
 				playButton.setEnabled(connected);
 				rewindButton.setEnabled(connected);
-				playButton.setText(midiService.isPlaying() ? R.string.pause : R.string.play);
+				playButton.setImageResource(midiService.isPlaying() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
 				Uri uri = midiService.getSongUri();
 				uriView.setText(uri == null ? "---" : uri.getLastPathSegment());
 			}
