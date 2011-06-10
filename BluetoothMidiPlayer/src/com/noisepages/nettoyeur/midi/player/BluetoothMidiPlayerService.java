@@ -18,6 +18,7 @@
 package com.noisepages.nettoyeur.midi.player;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Iterator;
 
 import android.app.Notification;
@@ -213,12 +214,14 @@ public class BluetoothMidiPlayerService extends Service {
 	}
 
 	/**
-	 * @param uri URI to load MIDI file from
+	 * @param uri URI to read MIDI data from
+	 * @param is input stream to read MIDI data from
 	 * @throws InvalidMidiDataException
 	 * @throws IOException
 	 */
 	public void loadSong(Uri uri) throws InvalidMidiDataException, IOException { 
-		sequencer = new MidiFileSequencer(uri);
+		InputStream is = getContentResolver().openInputStream(uri);
+		sequencer = new MidiFileSequencer(is);
 		this.uri = uri;
 	}
 	

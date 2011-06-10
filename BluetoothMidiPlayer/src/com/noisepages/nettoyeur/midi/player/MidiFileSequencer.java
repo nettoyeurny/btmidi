@@ -18,9 +18,8 @@
 package com.noisepages.nettoyeur.midi.player;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,8 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import android.net.Uri;
 
 import com.noisepages.nettoyeur.midi.file.InvalidMidiDataException;
 import com.noisepages.nettoyeur.midi.file.MetaMessage;
@@ -86,14 +83,13 @@ public class MidiFileSequencer implements Iterable<MidiFileSequencer.CompoundMid
 	/**
 	 * Creates a new sequencer object for a MIDI file.
 	 * 
-	 * @param uri URI of the MIDI file
+	 * @param is input stream to read MIDI content from
 	 * @throws InvalidMidiDataException thrown if the file is invalid
 	 * @throws IOException thrown if the file can't be read
 	 */
-	public MidiFileSequencer(Uri uri) throws InvalidMidiDataException, IOException {
+	public MidiFileSequencer(InputStream is) throws InvalidMidiDataException, IOException {
 		MidiFileReader reader = new StandardMidiFileReader();
-		Sequence seq = (uri.getScheme().equals("file")) ? reader.getSequence(new File(uri.getPath()))
-														: reader.getSequence(new URL(uri.toString()));
+		Sequence seq = reader.getSequence(is);
 		TempoCache tempoCache = new TempoCache(seq);
 		Map<Long, ByteArrayOutputStream> eventsBuilder = new HashMap<Long, ByteArrayOutputStream>();
 		long maxTime = 0;

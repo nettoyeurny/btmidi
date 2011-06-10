@@ -13,6 +13,11 @@
 				<category android:name="android.intent.category.DEFAULT"/>
 				<data android:mimeType="audio/midi"/>
             </intent-filter>
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW"/>
+				<category android:name="android.intent.category.DEFAULT"/>
+				<data android:mimeType="audio/sp-midi"/>
+            </intent-filter>
         </activity>
 		<activity android:name="com.noisepages.nettoyeur.bluetooth.DeviceListActivity"
 			android:label="@string/select_device" android:theme="@android:style/Theme.Dialog">

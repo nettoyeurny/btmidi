@@ -192,7 +192,7 @@ public class BluetoothMidiPlayerActivity extends Activity implements BluetoothMi
 				rewindButton.setEnabled(connected);
 				playButton.setImageResource(midiService.isPlaying() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
 				Uri uri = midiService.getSongUri();
-				uriView.setText(uri == null ? "---" : uri.getLastPathSegment());
+				uriView.setText(uri == null ? "---" : uri.toString());
 			}
 		});
 	}
