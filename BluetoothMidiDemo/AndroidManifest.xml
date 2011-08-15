@@ -17,4 +17,5 @@
 		<service android:name="com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService" />
 	</application>
     <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-sdk android:minSdkVersion="7" />
 </manifest>
