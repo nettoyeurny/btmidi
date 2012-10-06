@@ -27,9 +27,10 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
 import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
-import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiReceiver;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
+import com.noisepages.nettoyeur.midi.MidiReceiver;
 
 public class PianoActivity extends Activity implements View.OnTouchListener {
 
@@ -49,8 +50,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 			R.drawable.black51, R.drawable.white71, R.drawable.white81 };
 	private BluetoothMidiService midiService = null;
 
-	private final BluetoothMidiReceiver receiver = new BluetoothMidiReceiver() {
-
+	private final BluetoothSppObserver observer = new BluetoothSppObserver() {
 		@Override
 		public void onDeviceConnected(BluetoothDevice device) {
 			toast("Device connected: " + device);
@@ -65,7 +65,9 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		public void onConnectionFailed() {
 			toast("MIDI connection failed");
 		}
+	};
 
+	private final MidiReceiver receiver = new MidiReceiver() {
 		@Override
 		public void onNoteOn(int channel, int key, final int velocity) {
 			final int index = key - 60;
@@ -127,7 +129,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 			midiService = ((BluetoothMidiService.BluetoothMidiBinder) service)
 					.getService();
 			try {
-				midiService.init(receiver);
+				midiService.init(observer, receiver);
 			} catch (IOException e) {
 				toast("MIDI not available");
 				finish();
@@ -220,19 +222,11 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		int action = motionEvent.getAction();
 		if (action == MotionEvent.ACTION_DOWN && !touchState) {
 			touchState = true;
-			try {
-				midiService.sendNoteOn(0, index + 60, 100);
-			} catch (IOException e) {
-				toast(e.getMessage());
-			}
+			midiService.onNoteOn(0, index + 60, 100);
 			keyDown(index);
 		} else if (action == MotionEvent.ACTION_UP && touchState) {
 			touchState = false;
-			try {
-				midiService.sendNoteOff(0, index + 60, 64);
-			} catch (IOException e) {
-				toast(e.getMessage());
-			}
+			midiService.onNoteOff(0, index + 60, 64);
 			keyUp(index);
 		}
 		return true;

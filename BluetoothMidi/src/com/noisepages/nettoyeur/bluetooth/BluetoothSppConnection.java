@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.util.UUID;
 
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
+import com.noisepages.nettoyeur.midi.RawByteReceiver;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -52,7 +53,8 @@ public class BluetoothSppConnection {
 	}
 
 	private final BluetoothAdapter btAdapter;
-	private final BluetoothSppReceiver receiver;
+	private final BluetoothSppObserver sppObserver;
+	private final RawByteReceiver sppReceiver;
 	private final int bufferSize;
 	private volatile State connectionState = State.NONE;
 	private ConnectThread connectThread = null;
@@ -63,7 +65,7 @@ public class BluetoothSppConnection {
 	 * @param bufferSize buffer size for the input stream
 	 * @throws IOException thrown if Bluetooth is unavailable or disabled
 	 */
-	public BluetoothSppConnection(BluetoothSppReceiver receiver, int bufferSize) throws IOException {
+	public BluetoothSppConnection(BluetoothSppObserver observer, RawByteReceiver receiver, int bufferSize) throws IOException {
 		btAdapter = BluetoothAdapter.getDefaultAdapter();
 		if (btAdapter == null) {
 			throw new IOException("Bluetooth unavailable");
@@ -71,7 +73,8 @@ public class BluetoothSppConnection {
 		if (!btAdapter.isEnabled()) {
 			throw new IOException("Bluetooth disabled");
 		}
-		this.receiver = receiver;
+		this.sppObserver = observer;
+		this.sppReceiver = receiver;
 		this.bufferSize = bufferSize;
 	}
 
@@ -139,18 +142,18 @@ public class BluetoothSppConnection {
 		cancelConnectedThread();
 		connectedThread = new ConnectedThread(socket);
 		connectedThread.start();
-		receiver.onDeviceConnected(device);
+		sppObserver.onDeviceConnected(device);
 		setState(State.CONNECTED);
 	}
 
 	private void connectionFailed() {
 		setState(State.NONE);
-		receiver.onConnectionFailed();
+		sppObserver.onConnectionFailed();
 	}
 
 	private void connectionLost() {
 		setState(State.NONE);
-		receiver.onConnectionLost();
+		sppObserver.onConnectionLost();
 	}
 
 	private void cancelThreads() {
@@ -223,7 +226,7 @@ public class BluetoothSppConnection {
 			while (true) {
 				try {
 					nBytes = inStream.read(buffer);
-					receiver.onBytesReceived(nBytes, buffer);
+					sppReceiver.onBytesReceived(nBytes, buffer);
 				} catch (IOException e) {
 					connectionLost();
 					break;

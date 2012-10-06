@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.noisepages.nettoyeur.bluetooth;
+package com.noisepages.nettoyeur.midi;
 
 
 /**
- * Callback for handling raw input from an SPP connection.
+ * Callback for handling raw byte input.
  * 
  * @author Peter Brinkmann
  */
-public interface BluetoothSppReceiver extends BluetoothSppObserver {
+public interface RawByteReceiver {
 
 	/**
 	 * Processes the given buffer.

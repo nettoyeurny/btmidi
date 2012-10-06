@@ -25,68 +25,64 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppReceiver;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
 import com.noisepages.nettoyeur.bluetooth.R;
+import com.noisepages.nettoyeur.midi.FromWireConverter;
+import com.noisepages.nettoyeur.midi.MidiReceiver;
+import com.noisepages.nettoyeur.midi.RawByteReceiver;
+import com.noisepages.nettoyeur.midi.ToWireConverter;
 
 
 /**
- * Service for MIDI over Bluetooth using SPP.  Note that these methods choose sanity
- * over compliance with the MIDI standard, i.e., channel numbers start at 0, and pitch
- * bend values are centered at 0.
+ * Service for MIDI over Bluetooth using SPP.
  * 
  * @author Peter Brinkmann
  */
-public class BluetoothMidiService extends Service {
+public class BluetoothMidiService extends Service implements MidiReceiver {
 
 	private static final String TAG = "BluetoothMidiService";
 	private static final int ID = 1;
 	
-	private static enum State {
-		NOTE_OFF,
-		NOTE_ON,
-		POLY_TOUCH,
-		CONTROL_CHANGE,
-		PROGRAM_CHANGE,
-		AFTERTOUCH,
-		PITCH_BEND,
-		NONE
-	}
-
 	private final Binder binder = new BluetoothMidiBinder();
 	private BluetoothSppConnection btConnection = null;
-	private BluetoothMidiReceiver receiver = null;
-	private State midiState = State.NONE;
-	private int channel;
-	private int firstByte;
+	private BluetoothSppObserver observer = null;
 
-	private final BluetoothSppReceiver sppReceiver = new BluetoothSppReceiver() {
+	private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
 		@Override
 		public void onBytesReceived(int nBytes, byte[] buffer) {
-			for (int i = 0; i < nBytes; i++) {
-				processByte(buffer[i]);
+			if (btConnection == null) {
+				throw new IllegalStateException("BluetoothMidiService has not been initialized");
+			}
+			try {
+				btConnection.write(buffer, 0, buffer.length);
+			} catch (IOException e) {
+				Log.e(TAG, e.toString());
 			}
 		}
-
+	});
+	
+	private final BluetoothSppObserver sppObserver = new BluetoothSppObserver() {
 		@Override
 		public void onConnectionFailed() {
 			stopForeground(true);
-			receiver.onConnectionFailed();
+			observer.onConnectionFailed();
 		}
 
 		@Override
 		public void onConnectionLost() {
 			stopForeground(true);
-			receiver.onConnectionLost();
+			observer.onConnectionLost();
 		}
 
 		@Override
 		public void onDeviceConnected(BluetoothDevice device) {
-			receiver.onDeviceConnected(device);
+			observer.onDeviceConnected(device);
 		}
 	};
-
+	
 	public class BluetoothMidiBinder extends Binder {
 		public BluetoothMidiService getService() {
 			return BluetoothMidiService.this;
@@ -117,10 +113,10 @@ public class BluetoothMidiService extends Service {
 	 * @param receiver
 	 * @throws IOException thrown if Bluetooth is unavailable or disabled
 	 */
-	public void init(BluetoothMidiReceiver receiver) throws IOException {
+	public void init(BluetoothSppObserver observer, MidiReceiver receiver) throws IOException {
 		stop();
-		btConnection = new BluetoothSppConnection(sppReceiver, 32);
-		this.receiver = receiver;
+		this.observer = observer;
+		btConnection = new BluetoothSppConnection(sppObserver, new FromWireConverter(receiver), 32);
 	}
 
 	/**
@@ -179,10 +175,10 @@ public class BluetoothMidiService extends Service {
 	 * @param ch channel starting at 0
 	 * @param note
 	 * @param vel
-	 * @throws IOException
 	 */
-	public void sendNoteOff(int ch, int note, int vel) throws IOException {
-		write(0x80, ch, note, vel);
+	@Override
+	public void onNoteOff(int ch, int note, int vel) {
+		toWire.onNoteOff(ch, note, vel);
 	}
 
 	/**
@@ -191,10 +187,10 @@ public class BluetoothMidiService extends Service {
 	 * @param ch channel starting at 0
 	 * @param note
 	 * @param vel
-	 * @throws IOException
 	 */
-	public void sendNoteOn(int ch, int note, int vel) throws IOException {
-		write(0x90, ch, note, vel);
+	@Override
+	public void onNoteOn(int ch, int note, int vel) {
+		toWire.onNoteOn(ch, note, vel);
 	}
 
 	/**
@@ -203,10 +199,10 @@ public class BluetoothMidiService extends Service {
 	 * @param ch channel starting at 0
 	 * @param note
 	 * @param vel
-	 * @throws IOException
 	 */
-	public void sendPolyAftertouch(int ch, int note, int vel) throws IOException {
-		write(0xa0, ch, note, vel);
+	@Override
+	public void onPolyAftertouch(int ch, int note, int vel) {
+		toWire.onPolyAftertouch(ch, note, vel);
 	}
 
 	/**
@@ -215,10 +211,10 @@ public class BluetoothMidiService extends Service {
 	 * @param ch channel starting at 0
 	 * @param ctl
 	 * @param val
-	 * @throws IOException
 	 */
-	public void sendControlChange(int ch, int ctl, int val) throws IOException {
-		write(0xb0, ch, ctl, val);
+	@Override
+	public void onControlChange(int ch, int ctl, int val) {
+		toWire.onControlChange(ch, ctl, val);
 	}
 
 	/**
@@ -226,10 +222,10 @@ public class BluetoothMidiService extends Service {
 	 * 
 	 * @param ch channel starting at 0
 	 * @param pgm
-	 * @throws IOException
 	 */
-	public void sendProgramChange(int ch, int pgm) throws IOException {
-		write(0xc0, ch, pgm);
+	@Override
+	public void onProgramChange(int ch, int pgm) {
+		toWire.onProgramChange(ch, pgm);
 	}
 
 	/**
@@ -237,10 +233,10 @@ public class BluetoothMidiService extends Service {
 	 * 
 	 * @param ch channel starting at 0
 	 * @param vel
-	 * @throws IOException
 	 */
-	public void sendAftertouch(int ch, int vel) throws IOException {
-		write(0xd0, ch, vel);
+	@Override
+	public void onAftertouch(int ch, int vel) {
+		toWire.onAftertouch(ch, vel);
 	}
 
 	/**
@@ -248,103 +244,19 @@ public class BluetoothMidiService extends Service {
 	 * 
 	 * @param ch channel starting at 0
 	 * @param val pitch bend value centered at 0, ranging from -8192 to 8191
-	 * @throws IOException
 	 */
-	public void sendPitchbend(int ch, int val) throws IOException {
-		val += 8192;
-		write(0xe0, ch, (val & 0x7f), (val >> 7));
+	@Override
+	public void onPitchBend(int ch, int val) {
+		toWire.onPitchBend(ch, val);
 	}
 
 	/**
 	 * Sends a raw MIDI byte to the Bluetooth device.
 	 * 
 	 * @param value MIDI byte to send to device; only the LSB will be sent
-	 * @throws IOException
 	 */
-	public void sendRawByte(int value) throws IOException {
-		writeBytes((byte) value);
-	}
-
-	private void write(int msg, int ch, int a) throws IOException {
-		writeBytes(firstByte(msg, ch), (byte) a);
-	}
-
-	private void write(int msg, int ch, int a, int b) throws IOException {
-		writeBytes(firstByte(msg, ch), (byte) a, (byte) b);
-	}
-
-	private byte firstByte(int msg, int ch) {
-		return (byte)(msg | (ch & 0x0f));
-	}
-
-	private void writeBytes(byte... out) throws IOException {
-		if (btConnection == null) {
-			throw new IllegalStateException("BluetoothMidiService has not been initialized");
-		}
-		btConnection.write(out, 0, out.length);
-	}
-
-	private void processByte(int b) {
-		if (b < 0) {
-			midiState = State.values()[(b >> 4) & 0x07];
-			if (midiState != State.NONE) {
-				channel = b & 0x0f;
-				firstByte = -1;
-			} else {
-				receiver.onRawByte(b);
-			}
-		} else {
-			switch (midiState) {
-			case NOTE_OFF:
-				if (firstByte < 0) {
-					firstByte = b;
-				} else {
-					receiver.onNoteOff(channel, firstByte, b);
-					firstByte = -1;
-				}
-				break;
-			case NOTE_ON:
-				if (firstByte < 0) {
-					firstByte = b;
-				} else {
-					receiver.onNoteOn(channel, firstByte, b);
-					firstByte = -1;
-				}
-				break;
-			case POLY_TOUCH:
-				if (firstByte < 0) {
-					firstByte = b;
-				} else {
-					receiver.onPolyAftertouch(channel, firstByte, b);
-					firstByte = -1;
-				}
-				break;
-			case CONTROL_CHANGE:
-				if (firstByte < 0) {
-					firstByte = b;
-				} else {
-					receiver.onControlChange(channel, firstByte, b);
-					firstByte = -1;
-				}
-				break;
-			case PROGRAM_CHANGE:
-				receiver.onProgramChange(channel, b);
-				break;
-			case AFTERTOUCH:
-				receiver.onAftertouch(channel, b);
-				break;
-			case PITCH_BEND:
-				if (firstByte < 0) {
-					firstByte = b;
-				} else {
-					receiver.onPitchBend(channel, ((b << 7) | firstByte) - 8192);
-					firstByte = -1;
-				}
-				break;
-			default:
-				receiver.onRawByte(b);
-				break;
-			}
-		}
+	@Override
+	public void onRawByte(int value) {
+		toWire.onRawByte(value);
 	}
 }

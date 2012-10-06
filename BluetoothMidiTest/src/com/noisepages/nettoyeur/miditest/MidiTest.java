@@ -23,9 +23,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
 import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
-import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiReceiver;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
+import com.noisepages.nettoyeur.midi.MidiReceiver;
 
 public class MidiTest extends Activity implements OnClickListener {
 
@@ -63,7 +64,7 @@ public class MidiTest extends Activity implements OnClickListener {
 		});
 	}
 
-	private final BluetoothMidiReceiver receiver = new BluetoothMidiReceiver() {
+	private final BluetoothSppObserver observer = new BluetoothSppObserver() {
 		@Override
 		public void onDeviceConnected(BluetoothDevice device) {
 			post("device connected: " + device);
@@ -78,7 +79,9 @@ public class MidiTest extends Activity implements OnClickListener {
 		public void onConnectionFailed() {
 			post("connection failed");
 		}
+	};
 
+	private final MidiReceiver receiver = new MidiReceiver() {
 		@Override
 		public void onNoteOff(int channel, int key, int velocity) {
 			post("note off: " + channel + ", " + key + ", " + velocity);
@@ -125,7 +128,7 @@ public class MidiTest extends Activity implements OnClickListener {
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			midiService = ((BluetoothMidiService.BluetoothMidiBinder)service).getService();
 			try {
-				midiService.init(receiver);
+				midiService.init(observer, receiver);
 			} catch (IOException e) {
 				toast("MIDI not available");
 				finish();
@@ -190,17 +193,13 @@ public class MidiTest extends Activity implements OnClickListener {
 			}
 			break;
 		case R.id.play_button:
-			try {
-				if (!on) {
-					midiService.sendNoteOn(0, note, 80);
-				} else {
-					midiService.sendNoteOff(0, note, 64);
-					note++;
-				}
-				on = !on;
-			} catch (IOException e) {
-				toast(e.getMessage());
+			if (!on) {
+				midiService.onNoteOn(0, note, 80);
+			} else {
+				midiService.onNoteOff(0, note, 64);
+				note++;
 			}
+			on = !on;
 		default:
 			break;
 		}

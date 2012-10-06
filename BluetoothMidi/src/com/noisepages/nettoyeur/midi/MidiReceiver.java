@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.noisepages.nettoyeur.bluetooth.midi;
-
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
+package com.noisepages.nettoyeur.midi;
 
 
 /**
- * Callbacks for handling MIDI events and connection changes.  Note that these methods choose
- * sanity over compliance with the MIDI standard, i.e., channel numbers start at 0, and pitch
- * bend values are centered at 0.
+ * Callbacks for handling MIDI events and connection changes. Note that this
+ * interface chooses sanity over compliance with the MIDI standard, i.e.,
+ * channel numbers start at 0, and pitch bend values are centered at 0.
  * 
  * @author Peter Brinkmann
  */
-public interface BluetoothMidiReceiver extends BluetoothSppObserver {
+public interface MidiReceiver {
 
 	/**
 	 * Handles note off events.

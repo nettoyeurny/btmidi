@@ -38,8 +38,9 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppReceiver;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
 import com.noisepages.nettoyeur.bluetooth.R;
+import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.file.InvalidMidiDataException;
 import com.noisepages.nettoyeur.midi.player.MidiFileSequencer.CompoundMidiEvent;
 
@@ -99,12 +100,14 @@ public class BluetoothMidiPlayerService extends Service {
 		}
 	}
 	
-	private final BluetoothSppReceiver sppReceiver = new BluetoothSppReceiver() {
+	private final RawByteReceiver rawByteReceiver = new RawByteReceiver() {
 		@Override
 		public void onBytesReceived(int nBytes, byte[] buffer) {
 			// Do nothing.
 		}
-
+	};
+	
+	private final BluetoothSppObserver sppObserver = new BluetoothSppObserver() {
 		@Override
 		public void onConnectionFailed() {
 			stopForeground(true);
@@ -154,7 +157,7 @@ public class BluetoothMidiPlayerService extends Service {
 	public void onCreate() {
 		super.onCreate();
 		try {
-			btConnection = new BluetoothSppConnection(sppReceiver, 256);
+			btConnection = new BluetoothSppConnection(sppObserver, rawByteReceiver, 256);
 		} catch (IOException e) {
 			Log.e(TAG, e.toString());
 		}
