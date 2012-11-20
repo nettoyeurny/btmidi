@@ -62,7 +62,9 @@ public class UsbMidiInterface implements MidiReceiver {
 			int ifaceCount = device.getInterfaceCount();
 			for (int i = 0; i < ifaceCount; ++i) {
 				UsbInterface iface = device.getInterface(i);
-				if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
+				Log.i("UsbMidiInterface", "device: " + device.getDeviceName() + ", class: " + iface.getInterfaceClass() + ", subclass: " + iface.getInterfaceSubclass());
+				// if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
+				if (iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
 				UsbEndpoint input = null;
 				UsbEndpoint output = null;
 				int epCount = iface.getEndpointCount();

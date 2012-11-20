@@ -16,20 +16,16 @@ public final class R {
         public static int ic_launcher=0x7f020002;
     }
     public static final class id {
-        public static int paired_devices=0x7f060001;
-        public static int title_paired_devices=0x7f060000;
+        public static int paired_devices=0x7f050001;
+        public static int title_paired_devices=0x7f050000;
     }
     public static final class layout {
         public static int device_list=0x7f030000;
         public static int device_name=0x7f030001;
     }
     public static final class string {
-        public static int app_name=0x7f040003;
         public static int none_paired=0x7f040001;
         public static int select_device=0x7f040000;
         public static int title_paired_devices=0x7f040002;
-    }
-    public static final class style {
-        public static int AppTheme=0x7f050000;
     }
 }
