@@ -128,10 +128,15 @@ public class MainActivity extends Activity {
 		handler = new Handler();
 		setContentView(R.layout.activity_main);
 		mainText = (TextView) findViewById(R.id.mainText);
-		UsbManager mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
-		PendingIntent mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
 		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
 		registerReceiver(mUsbReceiver, filter);
+	}
+	
+	@Override
+	protected void onStart() {
+		super.onStart();
+		UsbManager mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
+		PendingIntent mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
 		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
 			for (UsbMidiInterface iface : device.getInterfaces()) {
 				if (!iface.getInputs().isEmpty()) {
