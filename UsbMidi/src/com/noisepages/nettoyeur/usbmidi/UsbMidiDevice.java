@@ -21,7 +21,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
@@ -38,10 +42,18 @@ import com.noisepages.nettoyeur.midi.ToWireConverter;
 public class UsbMidiDevice {
 
 	private final static String TAG = "UsbMidiDevice";
+	private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
 
+	private static BroadcastReceiver permissionHandler = null;
+	
 	private final UsbDevice device;
 	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
 	private volatile UsbDeviceConnection connection = null;
+
+	public static interface UsbMidiClient {
+		public void onPermissionGranted();
+		public void onPermissionDenied();
+	}
 
 	public class UsbMidiInterface {
 		private final UsbInterface iface;
@@ -229,6 +241,42 @@ public class UsbMidiDevice {
 		}
 	}
 
+	public static void installPermissionHandler(Context context, final UsbMidiClient client) {
+		uninstallPermissionHandler(context);
+		permissionHandler = new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				String action = intent.getAction();
+				if (ACTION_USB_PERMISSION.equals(action)) {
+					synchronized (this) {
+						UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+						if (device != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+							client.onPermissionGranted();
+						} else {
+							client.onPermissionDenied();
+						}
+					}
+				}
+			}
+		};
+		context.registerReceiver(permissionHandler, new IntentFilter(ACTION_USB_PERMISSION));
+	}
+
+	public static void uninstallPermissionHandler(Context context) {
+		if (permissionHandler != null) {
+			context.unregisterReceiver(permissionHandler);
+			permissionHandler = null;
+		}
+	}
+	
+	public void requestPermission(Context context) {
+		if (permissionHandler == null) {
+			throw new IllegalStateException("installPermissionHandler must be called before requesting permission");
+		}
+		((UsbManager) context.getSystemService(Context.USB_SERVICE)).requestPermission(device,
+				PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0));
+	}
+
 	public static List<UsbMidiDevice> getMidiDevices(Context context) {
 		List<UsbMidiDevice> midiDevices = new ArrayList<UsbMidiDevice>();
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
@@ -282,10 +330,6 @@ public class UsbMidiDevice {
 	@Override
 	public String toString() {
 		return device.toString();
-	}
-
-	public UsbDevice getDevice() {
-		return device;
 	}
 
 	public List<UsbMidiInterface> getInterfaces() {
