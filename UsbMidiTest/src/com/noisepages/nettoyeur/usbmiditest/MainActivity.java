@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
 	private static final String TAG = "UsbMidiTest";
 
 	private TextView mainText;
-	private UsbMidiDevice iface = null;
+	private UsbMidiDevice midiDevice = null;
 	private Handler handler;
 
 	private static final String ACTION_USB_PERMISSION =
@@ -55,8 +55,8 @@ public class MainActivity extends Activity {
 					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 						if (device != null) {
-							iface.open(MainActivity.this);
-							List<UsbMidiInput> inputs = iface.getInputs();
+							midiDevice.open(MainActivity.this);
+							List<UsbMidiInput> inputs = midiDevice.getInputs();
 							if (!inputs.isEmpty()) {
 								UsbMidiInput input = inputs.get(0);
 								input.setReceiver(new MidiReceiver() {
@@ -132,14 +132,14 @@ public class MainActivity extends Activity {
 		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
 		registerReceiver(mUsbReceiver, filter);
 		String s = "USB MIDI devices\n";
-		List<UsbMidiDevice> ifaces = UsbMidiDevice.getMidiDevices(this);
-		for (UsbMidiDevice iface : ifaces) {
-			s += iface + "\n";
+		List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
+		for (UsbMidiDevice device : devices) {
+			s += device + "\n\n";
 		}
 		mainText.setText(s);
-		if (ifaces.size() > 0) {
-			iface = ifaces.get(0);
-			mUsbManager.requestPermission(iface.getDevice(), mPermissionIntent);
+		if (devices.size() > 0) {
+			midiDevice = devices.get(0);
+			mUsbManager.requestPermission(midiDevice.getDevice(), mPermissionIntent);
 		}
 	}
 
@@ -152,8 +152,8 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onStop() {
 		super.onStop();
-		if (iface != null) {
-			iface.close();
+		if (midiDevice != null) {
+			midiDevice.close();
 		}
 	}
 }
