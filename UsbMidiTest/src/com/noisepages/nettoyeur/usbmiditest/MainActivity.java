@@ -33,15 +33,15 @@ import android.view.Menu;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiInterface;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiInterface.UsbMidiInput;
+import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice;
+import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInput;
 
 public class MainActivity extends Activity {
 
 	private static final String TAG = "UsbMidiTest";
 
 	private TextView mainText;
-	private UsbMidiInterface iface = null;
+	private UsbMidiDevice iface = null;
 	private Handler handler;
 
 	private static final String ACTION_USB_PERMISSION =
@@ -132,8 +132,8 @@ public class MainActivity extends Activity {
 		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
 		registerReceiver(mUsbReceiver, filter);
 		String s = "USB MIDI devices\n";
-		List<UsbMidiInterface> ifaces = UsbMidiInterface.getMidiInterfaces(this);
-		for (UsbMidiInterface iface : ifaces) {
+		List<UsbMidiDevice> ifaces = UsbMidiDevice.getMidiDevices(this);
+		for (UsbMidiDevice iface : ifaces) {
 			s += iface + "\n";
 		}
 		mainText.setText(s);

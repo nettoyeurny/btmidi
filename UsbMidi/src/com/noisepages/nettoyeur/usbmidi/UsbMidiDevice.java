@@ -35,14 +35,14 @@ import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
 
-public class UsbMidiInterface {
+public class UsbMidiDevice {
 
-	private final static String TAG = "UsbMidiInterface";
+	private final static String TAG = "UsbMidiDevice";
 
 	private final UsbDevice device;
 	private final UsbInterface iface;
-	private final List<UsbMidiInput> inputs = new ArrayList<UsbMidiInterface.UsbMidiInput>();
-	private final List<UsbMidiOutput> outputs = new ArrayList<UsbMidiInterface.UsbMidiOutput>();
+	private final List<UsbMidiInput> inputs = new ArrayList<UsbMidiDevice.UsbMidiInput>();
+	private final List<UsbMidiOutput> outputs = new ArrayList<UsbMidiDevice.UsbMidiOutput>();
 	private volatile UsbDeviceConnection connection = null;
 
 	public class UsbMidiInput {
@@ -197,8 +197,8 @@ public class UsbMidiInterface {
 		}
 	}
 
-	public static List<UsbMidiInterface> getMidiInterfaces(Context context) {
-		List<UsbMidiInterface> midiInterfaces = new ArrayList<UsbMidiInterface>();
+	public static List<UsbMidiDevice> getMidiDevices(Context context) {
+		List<UsbMidiDevice> midiInterfaces = new ArrayList<UsbMidiDevice>();
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
 		for (UsbDevice device : manager.getDeviceList().values()) {
 			int ifaceCount = device.getInterfaceCount();
@@ -220,7 +220,7 @@ public class UsbMidiInterface {
 					}
 				}
 				if (!inputs.isEmpty() || !outputs.isEmpty()) {
-					midiInterfaces.add(new UsbMidiInterface(device, iface, inputs, outputs));
+					midiInterfaces.add(new UsbMidiDevice(device, iface, inputs, outputs));
 				}
 			}
 
@@ -228,7 +228,7 @@ public class UsbMidiInterface {
 		return midiInterfaces;
 	}
 
-	private UsbMidiInterface(UsbDevice device, UsbInterface iface, List<UsbEndpoint> inputs, List<UsbEndpoint> outputs) {
+	private UsbMidiDevice(UsbDevice device, UsbInterface iface, List<UsbEndpoint> inputs, List<UsbEndpoint> outputs) {
 		this.device = device;
 		this.iface = iface;
 		for (UsbEndpoint ep : inputs) {
