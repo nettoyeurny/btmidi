@@ -66,7 +66,6 @@ public class UsbMidiInterface implements MidiReceiver {
 			for (int i = 0; i < nBytes; ++i) {
 				outBuffer[i + 1] = buffer[i];
 			}
-			Log.i(TAG, Arrays.toString(outBuffer));
 			connection.bulkTransfer(outputEndpoint, outBuffer, 4, 0);
 		}
 	});
@@ -78,9 +77,8 @@ public class UsbMidiInterface implements MidiReceiver {
 			int ifaceCount = device.getInterfaceCount();
 			for (int i = 0; i < ifaceCount; ++i) {
 				UsbInterface iface = device.getInterface(i);
-				Log.i("UsbMidiInterface", "device: " + device.getDeviceName() + ", class: " + iface.getInterfaceClass() + ", subclass: " + iface.getInterfaceSubclass());
-				// if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
-				if (iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
+				Log.i(TAG, "device: " + device.getDeviceName() + ", class: " + iface.getInterfaceClass() + ", subclass: " + iface.getInterfaceSubclass());
+				if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
 				UsbEndpoint input = null;
 				UsbEndpoint output = null;
 				int epCount = iface.getEndpointCount();
@@ -148,7 +146,6 @@ public class UsbMidiInterface implements MidiReceiver {
 			public void run() {
 				while (!interrupted()) {
 					int nRead = connection.bulkTransfer(inputEndpoint, inputBuffer, inputBuffer.length, 100);
-					Log.i(TAG, "nRead: " + nRead + ", buffer: " + Arrays.toString(inputBuffer));
 					for (int i = 0; i < nRead; i += 4) {
 						byte b = inputBuffer[i];
 						if ((b & 0xf0) != cable) continue;

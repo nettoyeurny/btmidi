@@ -54,12 +54,11 @@ public class MainActivity extends Activity {
 					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 						if(device != null){
-							iface.open(MainActivity.this, 1, new MidiReceiver() {
+							iface.open(MainActivity.this, 0, new MidiReceiver() {
 
 								@Override
 								public void onRawByte(int value) {
-									// TODO Auto-generated method stub
-
+									update("raw byte: " + value);
 								}
 
 								@Override
