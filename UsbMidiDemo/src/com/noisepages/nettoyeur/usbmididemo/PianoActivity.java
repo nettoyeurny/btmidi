@@ -74,7 +74,6 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 			}
 		}
 
-		// We won't use the remaining callbacks in this demo.
 		@Override
 		public void onProgramChange(int channel, int program) {
 			toast("program change: " + channel + ", " + program);
