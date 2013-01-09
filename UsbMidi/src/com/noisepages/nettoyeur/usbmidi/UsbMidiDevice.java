@@ -42,7 +42,7 @@ import com.noisepages.nettoyeur.midi.ToWireConverter;
 public class UsbMidiDevice {
 
 	private final static String TAG = "UsbMidiDevice";
-	private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
+	private static final String ACTION_USB_PERMISSION = "com.noisepages.nettoyeur.usbmidi.USB_PERMISSION";
 
 	private static BroadcastReceiver permissionHandler = null;
 	
