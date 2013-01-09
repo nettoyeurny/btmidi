@@ -35,6 +35,7 @@ import android.widget.TextView;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInput;
+import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInterface;
 
 public class MainActivity extends Activity {
 
@@ -56,7 +57,7 @@ public class MainActivity extends Activity {
 					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
 						if (device != null) {
 							midiDevice.open(MainActivity.this);
-							List<UsbMidiInput> inputs = midiDevice.getInputs();
+							List<UsbMidiInput> inputs = midiDevice.getInterfaces().get(0).getInputs();
 							if (!inputs.isEmpty()) {
 								UsbMidiInput input = inputs.get(0);
 								input.setReceiver(new MidiReceiver() {
@@ -131,16 +132,17 @@ public class MainActivity extends Activity {
 		PendingIntent mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
 		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
 		registerReceiver(mUsbReceiver, filter);
-		String s = "USB MIDI devices\n";
-		List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
-		for (UsbMidiDevice device : devices) {
-			s += device + "\n\n";
+		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
+			for (UsbMidiInterface iface : device.getInterfaces()) {
+				if (!iface.getInputs().isEmpty()) {
+					midiDevice = device;
+					mainText.setText("USB MIDI devices\n\n" + device.toString());
+					mUsbManager.requestPermission(midiDevice.getDevice(), mPermissionIntent);
+					return;
+				}
+			}
 		}
-		mainText.setText(s);
-		if (devices.size() > 0) {
-			midiDevice = devices.get(0);
-			mUsbManager.requestPermission(midiDevice.getDevice(), mPermissionIntent);
-		}
+		mainText.setText("No USB MIDI devices found");
 	}
 
 	@Override

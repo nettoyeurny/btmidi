@@ -40,10 +40,42 @@ public class UsbMidiDevice {
 	private final static String TAG = "UsbMidiDevice";
 
 	private final UsbDevice device;
-	private final UsbInterface iface;
-	private final List<UsbMidiInput> inputs = new ArrayList<UsbMidiDevice.UsbMidiInput>();
-	private final List<UsbMidiOutput> outputs = new ArrayList<UsbMidiDevice.UsbMidiOutput>();
+	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
 	private volatile UsbDeviceConnection connection = null;
+
+	public class UsbMidiInterface {
+		private final UsbInterface iface;
+		private final List<UsbMidiInput> inputs;
+		private final List<UsbMidiOutput> outputs;
+
+		private UsbMidiInterface(UsbInterface iface, List<UsbMidiInput> inputs, List<UsbMidiOutput> outputs) {
+			this.iface = iface;
+			this.inputs = inputs;
+			this.outputs = outputs;
+		}
+
+		private UsbInterface getInterface() {
+			return iface;
+		}
+
+		public String toString() {
+			return iface.toString();
+		}
+
+		public List<UsbMidiInput> getInputs() {
+			return Collections.unmodifiableList(inputs);
+		}
+
+		public List<UsbMidiOutput> getOutputs() {
+			return Collections.unmodifiableList(outputs);
+		}
+
+		public void stop() {
+			for (UsbMidiInput input : inputs) {
+				input.stop();
+			}
+		}
+	}
 
 	public class UsbMidiInput {
 		private final UsbEndpoint inputEndpoint;
@@ -54,10 +86,10 @@ public class UsbMidiDevice {
 		private UsbMidiInput(UsbEndpoint ep) {
 			inputEndpoint = ep;
 		}
-		
+
 		@Override
 		public String toString() {
-			return "input:" + inputEndpoint;
+			return "in:" + inputEndpoint;
 		}
 
 		public void setReceiver(MidiReceiver r) {
@@ -146,10 +178,10 @@ public class UsbMidiDevice {
 		private UsbMidiOutput(UsbEndpoint ep) {
 			outputEndpoint = ep;
 		}
-		
+
 		@Override
 		public String toString() {
-			return "output:" + outputEndpoint;
+			return "out:" + outputEndpoint;
 		}
 
 		public void setVirtualCable(int c) {
@@ -198,76 +230,82 @@ public class UsbMidiDevice {
 	}
 
 	public static List<UsbMidiDevice> getMidiDevices(Context context) {
-		List<UsbMidiDevice> midiInterfaces = new ArrayList<UsbMidiDevice>();
+		List<UsbMidiDevice> midiDevices = new ArrayList<UsbMidiDevice>();
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
 		for (UsbDevice device : manager.getDeviceList().values()) {
-			int ifaceCount = device.getInterfaceCount();
-			for (int i = 0; i < ifaceCount; ++i) {
-				UsbInterface iface = device.getInterface(i);
-				Log.i(TAG, "device: " + device.getDeviceName() + ", class: " + iface.getInterfaceClass() + ", subclass: " + iface.getInterfaceSubclass());
-				if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
-				List<UsbEndpoint> inputs = new ArrayList<UsbEndpoint>();
-				List<UsbEndpoint> outputs = new ArrayList<UsbEndpoint>();
-				int epCount = iface.getEndpointCount();
-				for (int j = 0; j < epCount; ++j) {
-					UsbEndpoint ep = iface.getEndpoint(j);
-					if (ep.getMaxPacketSize() == 64 && ep.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
-						if (ep.getDirection() == UsbConstants.USB_DIR_IN) {
-							inputs.add(ep);
-						} else {
-							outputs.add(ep);
-						}
+			UsbMidiDevice midiDevice = new UsbMidiDevice(device);
+			if (!midiDevice.getInterfaces().isEmpty()) {
+				midiDevices.add(midiDevice);
+			}
+		}
+		return midiDevices;
+	}
+
+	public UsbMidiDevice(UsbDevice device) {
+		this.device = device;
+		int ifaceCount = device.getInterfaceCount();
+		for (int i = 0; i < ifaceCount; ++i) {
+			UsbInterface iface = device.getInterface(i);
+			Log.i(TAG, "device: " + device.getDeviceName() + ", class: " + iface.getInterfaceClass() + ", subclass: " + iface.getInterfaceSubclass());
+			if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
+			List<UsbEndpoint> inputs = new ArrayList<UsbEndpoint>();
+			List<UsbEndpoint> outputs = new ArrayList<UsbEndpoint>();
+			int epCount = iface.getEndpointCount();
+			for (int j = 0; j < epCount; ++j) {
+				UsbEndpoint ep = iface.getEndpoint(j);
+				if (ep.getMaxPacketSize() == 64 && ep.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
+					if (ep.getDirection() == UsbConstants.USB_DIR_IN) {
+						inputs.add(ep);
+					} else {
+						outputs.add(ep);
 					}
 				}
-				if (!inputs.isEmpty() || !outputs.isEmpty()) {
-					midiInterfaces.add(new UsbMidiDevice(device, iface, inputs, outputs));
-				}
 			}
-
+			if (!inputs.isEmpty() || !outputs.isEmpty()) {
+				addInterface(iface, inputs, outputs);
+			}
 		}
-		return midiInterfaces;
 	}
 
-	private UsbMidiDevice(UsbDevice device, UsbInterface iface, List<UsbEndpoint> inputs, List<UsbEndpoint> outputs) {
-		this.device = device;
-		this.iface = iface;
+	private void addInterface(UsbInterface iface, List<UsbEndpoint> inputs, List<UsbEndpoint> outputs) {
+		List<UsbMidiInput> midiInputs = new ArrayList<UsbMidiDevice.UsbMidiInput>();
+		List<UsbMidiOutput> midiOutputs = new ArrayList<UsbMidiDevice.UsbMidiOutput>();
 		for (UsbEndpoint ep : inputs) {
-			this.inputs.add(new UsbMidiInput(ep));
+			midiInputs.add(new UsbMidiInput(ep));
 		}
 		for (UsbEndpoint ep: outputs) {
-			this.outputs.add(new UsbMidiOutput(ep));
+			midiOutputs.add(new UsbMidiOutput(ep));
 		}
+		interfaces.add(new UsbMidiInterface(iface, midiInputs, midiOutputs));
 	}
-	
+
 	@Override
 	public String toString() {
-		return device + ":" + iface;
+		return device.toString();
 	}
 
 	public UsbDevice getDevice() {
 		return device;
 	}
 
-	public List<UsbMidiInput> getInputs() {
-		return Collections.unmodifiableList(inputs);
+	public List<UsbMidiInterface> getInterfaces() {
+		return Collections.unmodifiableList(interfaces);
 	}
-	
-	public List<UsbMidiOutput> getOutputs() {
-		return Collections.unmodifiableList(outputs);
-	}
-	
+
 	public void open(Context context) {
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
 		connection = manager.openDevice(device);
-		connection.claimInterface(iface, true);
+		for (UsbMidiInterface iface : interfaces) {
+			connection.claimInterface(iface.getInterface(), true);
+		}
 	}
 
 	public void close() {
 		if (connection == null) return;
-		for (UsbMidiInput input : inputs) {
-			input.stop();
+		for (UsbMidiInterface iface : interfaces) {
+			iface.stop();
+			connection.releaseInterface(iface.getInterface());
 		}
-		connection.releaseInterface(iface);
 		connection.close();
 		connection = null;
 	}
