@@ -44,16 +44,11 @@ public class UsbMidiDevice {
 	private final static String TAG = "UsbMidiDevice";
 	private static final String ACTION_USB_PERMISSION = "com.noisepages.nettoyeur.usbmidi.USB_PERMISSION";
 
-	private static BroadcastReceiver permissionHandler = null;
+	private static BroadcastReceiver broadcastReceiver = null;
 	
 	private final UsbDevice device;
 	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
 	private volatile UsbDeviceConnection connection = null;
-
-	public static interface UsbMidiClient {
-		public void onPermissionGranted();
-		public void onPermissionDenied();
-	}
 
 	public class UsbMidiInterface {
 		private final UsbInterface iface;
@@ -241,9 +236,9 @@ public class UsbMidiDevice {
 		}
 	}
 
-	public static void installPermissionHandler(Context context, final UsbMidiClient client) {
+	public static void installPermissionHandler(Context context, final PermissionHandler handler) {
 		uninstallPermissionHandler(context);
-		permissionHandler = new BroadcastReceiver() {
+		broadcastReceiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				String action = intent.getAction();
@@ -251,26 +246,26 @@ public class UsbMidiDevice {
 					synchronized (this) {
 						UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 						if (device != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-							client.onPermissionGranted();
+							handler.onPermissionGranted();
 						} else {
-							client.onPermissionDenied();
+							handler.onPermissionDenied();
 						}
 					}
 				}
 			}
 		};
-		context.registerReceiver(permissionHandler, new IntentFilter(ACTION_USB_PERMISSION));
+		context.registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_PERMISSION));
 	}
 
 	public static void uninstallPermissionHandler(Context context) {
-		if (permissionHandler != null) {
-			context.unregisterReceiver(permissionHandler);
-			permissionHandler = null;
+		if (broadcastReceiver != null) {
+			context.unregisterReceiver(broadcastReceiver);
+			broadcastReceiver = null;
 		}
 	}
 	
 	public void requestPermission(Context context) {
-		if (permissionHandler == null) {
+		if (broadcastReceiver == null) {
 			throw new IllegalStateException("installPermissionHandler must be called before requesting permission");
 		}
 		((UsbManager) context.getSystemService(Context.USB_SERVICE)).requestPermission(device,

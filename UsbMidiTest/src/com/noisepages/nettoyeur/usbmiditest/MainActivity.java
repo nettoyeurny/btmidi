@@ -22,12 +22,11 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.Menu;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
+import com.noisepages.nettoyeur.usbmidi.PermissionHandler;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiClient;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInput;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInterface;
 
@@ -96,7 +95,7 @@ public class MainActivity extends Activity {
 		handler = new Handler();
 		setContentView(R.layout.activity_main);
 		mainText = (TextView) findViewById(R.id.mainText);
-		UsbMidiDevice.installPermissionHandler(this, new UsbMidiClient() {
+		UsbMidiDevice.installPermissionHandler(this, new PermissionHandler() {
 
 			@Override
 			public void onPermissionGranted() {
@@ -136,12 +135,6 @@ public class MainActivity extends Activity {
 			}
 		}
 		mainText.setText("No USB MIDI devices found");
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.activity_main, menu);
-		return true;
 	}
 
 	@Override
