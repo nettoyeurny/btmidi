@@ -34,6 +34,7 @@ import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiInterface;
+import com.noisepages.nettoyeur.usbmidi.UsbMidiInterface.UsbMidiInput;
 
 public class MainActivity extends Activity {
 
@@ -53,50 +54,54 @@ public class MainActivity extends Activity {
 				synchronized (this) {
 					UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-						if(device != null){
-							iface.open(MainActivity.this, 0, new MidiReceiver() {
+						if (device != null) {
+							iface.open(MainActivity.this);
+							List<UsbMidiInput> inputs = iface.getInputs();
+							if (!inputs.isEmpty()) {
+								UsbMidiInput input = inputs.get(0);
+								input.setReceiver(new MidiReceiver() {
+									@Override
+									public void onRawByte(int value) {
+										update("raw byte: " + value);
+									}
 
-								@Override
-								public void onRawByte(int value) {
-									update("raw byte: " + value);
-								}
+									@Override
+									public void onProgramChange(int channel, int program) {
+										update("program change: " + channel + ", " + program);
+									}
 
-								@Override
-								public void onProgramChange(int channel, int program) {
-									update("program change: " + channel + ", " + program);
-								}
+									@Override
+									public void onPolyAftertouch(int channel, int key, int velocity) {
+										update("poly aftertouch: " + channel + ", " + key + ", " + velocity);
+									}
 
-								@Override
-								public void onPolyAftertouch(int channel, int key, int velocity) {
-									update("poly aftertouch: " + channel + ", " + key + ", " + velocity);
-								}
+									@Override
+									public void onPitchBend(int channel, int value) {
+										update("pitch bend: " + channel + ", " + value);
+									}
 
-								@Override
-								public void onPitchBend(int channel, int value) {
-									update("pitch bend: " + channel + ", " + value);
-								}
+									@Override
+									public void onNoteOn(int channel, int key, int velocity) {
+										update("note on: " + channel + ", " + key + ", " + velocity);
+									}
 
-								@Override
-								public void onNoteOn(int channel, int key, int velocity) {
-									update("note on: " + channel + ", " + key + ", " + velocity);
-								}
+									@Override
+									public void onNoteOff(int channel, int key, int velocity) {
+										update("note off: " + channel + ", " + key + ", " + velocity);
+									}
 
-								@Override
-								public void onNoteOff(int channel, int key, int velocity) {
-									update("note off: " + channel + ", " + key + ", " + velocity);
-								}
+									@Override
+									public void onControlChange(int channel, int controller, int value) {
+										update("control change: " + channel + ", " + controller + ", " + value);
+									}
 
-								@Override
-								public void onControlChange(int channel, int controller, int value) {
-									update("control change: " + channel + ", " + controller + ", " + value);
-								}
-
-								@Override
-								public void onAftertouch(final int channel, final int velocity) {
-									update("aftertouch: " + channel + ", " + velocity);
-								}
-							});
-							iface.start();
+									@Override
+									public void onAftertouch(final int channel, final int velocity) {
+										update("aftertouch: " + channel + ", " + velocity);
+									}
+								});
+								input.start();
+							}
 						}
 					} 
 					else {
@@ -115,7 +120,7 @@ public class MainActivity extends Activity {
 			}
 		});
 	}
-	
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -129,7 +134,7 @@ public class MainActivity extends Activity {
 		String s = "USB MIDI devices\n";
 		List<UsbMidiInterface> ifaces = UsbMidiInterface.getMidiInterfaces(this);
 		for (UsbMidiInterface iface : ifaces) {
-			s += iface.getDevice().toString() + ", input: " + iface.hasInput() + ", output: " + iface.hasOutput() + "\n";
+			s += iface + "\n";
 		}
 		mainText.setText(s);
 		if (ifaces.size() > 0) {

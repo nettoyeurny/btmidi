@@ -18,6 +18,7 @@ package com.noisepages.nettoyeur.usbmidi;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import android.content.Context;
@@ -34,42 +35,168 @@ import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
 
-public class UsbMidiInterface implements MidiReceiver {
-	
+public class UsbMidiInterface {
+
 	private final static String TAG = "UsbMidiInterface";
-	
+
 	private final UsbDevice device;
 	private final UsbInterface iface;
-	private final UsbEndpoint inputEndpoint;
-	private final UsbEndpoint outputEndpoint;
+	private final List<UsbMidiInput> inputs = new ArrayList<UsbMidiInterface.UsbMidiInput>();
+	private final List<UsbMidiOutput> outputs = new ArrayList<UsbMidiInterface.UsbMidiOutput>();
 	private volatile UsbDeviceConnection connection = null;
-	private volatile FromWireConverter fromWire;
-	private volatile int cable;
-	private volatile Thread inputThread = null;
-	
-	private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
-		private final byte[] outBuffer = new byte[4];
-		@Override
-		public void onBytesReceived(int nBytes, byte[] buffer) {
-			if (outputEndpoint == null || connection == null) return;
-			if (nBytes == 0) return;
-			if (nBytes > 3) {
-				Log.w(TAG, "bad buffer size: " + nBytes);
-				return;
-			}
-			Arrays.fill(outBuffer, (byte) 0);
-			if (nBytes > 1) {
-				outBuffer[0] = (byte) (cable | (buffer[0] >> 4));
-			} else {
-				outBuffer[0] = (byte) (cable | 0x0f);
-			}
-			for (int i = 0; i < nBytes; ++i) {
-				outBuffer[i + 1] = buffer[i];
-			}
-			connection.bulkTransfer(outputEndpoint, outBuffer, 4, 0);
+
+	public class UsbMidiInput {
+		private final UsbEndpoint inputEndpoint;
+		private volatile FromWireConverter fromWire;
+		private volatile int cable = -1;
+		private volatile Thread inputThread = null;
+
+		private UsbMidiInput(UsbEndpoint ep) {
+			inputEndpoint = ep;
 		}
-	});
-	
+		
+		@Override
+		public String toString() {
+			return "input:" + inputEndpoint;
+		}
+
+		public void setReceiver(MidiReceiver r) {
+			fromWire = new FromWireConverter(r);
+		}
+
+		public void setVirtualCable(int c) {
+			cable = (c >= 0) ? (c << 4) & 0xf0 : -1;
+		}
+
+		public void start() {
+			if (fromWire == null) {
+				throw new IllegalStateException("no receiver");
+			}
+			if (connection == null) return;
+			stop();
+			inputThread = new Thread() {
+				private final byte[] inputBuffer = new byte[64];
+				private final byte[] tmpBuffer = new byte[3];
+				@Override
+				public void run() {
+					while (!interrupted()) {
+						int nRead = connection.bulkTransfer(inputEndpoint, inputBuffer, inputBuffer.length, 100);
+						for (int i = 0; i < nRead; i += 4) {
+							byte b = inputBuffer[i];
+							if (cable >= 0 && (b & 0xf0) != cable) continue;
+							b &= 0x0f;
+							if (b >= 0x08) {
+								int n = 0;
+								tmpBuffer[n++] = inputBuffer[i + 1];
+								if (b != 0x0f) {
+									tmpBuffer[n++] = inputBuffer[i + 2];
+									if (b != 0x0c && b != 0x0d) {
+										tmpBuffer[n++] = inputBuffer[i + 3];
+									}
+								}
+								fromWire.onBytesReceived(n, tmpBuffer);
+							}
+						}
+					}
+				}
+			};
+			inputThread.start();
+		}
+
+		public void stop() {
+			if (inputThread != null) {
+				inputThread.interrupt();
+				try {
+					inputThread.join();
+				} catch (InterruptedException e) {
+					// Do nothing.
+				}
+				inputThread = null;
+			}
+		}
+	}
+
+	public class UsbMidiOutput implements MidiReceiver {
+		private final UsbEndpoint outputEndpoint;
+		private volatile int cable = 0;
+
+		private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
+			private final byte[] outBuffer = new byte[4];
+			@Override
+			public void onBytesReceived(int nBytes, byte[] buffer) {
+				if (connection == null) return;
+				if (nBytes == 0) return;
+				if (nBytes > 3) {
+					Log.w(TAG, "bad buffer size: " + nBytes);
+					return;
+				}
+				Arrays.fill(outBuffer, (byte) 0);
+				if (nBytes > 1) {
+					outBuffer[0] = (byte) (cable | (buffer[0] >> 4));
+				} else {
+					outBuffer[0] = (byte) (cable | 0x0f);
+				}
+				for (int i = 0; i < nBytes; ++i) {
+					outBuffer[i + 1] = buffer[i];
+				}
+				connection.bulkTransfer(outputEndpoint, outBuffer, 4, 0);
+			}
+		});
+
+		private UsbMidiOutput(UsbEndpoint ep) {
+			outputEndpoint = ep;
+		}
+		
+		@Override
+		public String toString() {
+			return "output:" + outputEndpoint;
+		}
+
+		public void setVirtualCable(int c) {
+			cable = (c << 4) & 0xf0;
+		}
+
+		@Override
+		public void onNoteOff(int ch, int note, int vel) {
+			toWire.onNoteOff(ch, note, vel);
+		}
+
+		@Override
+		public void onNoteOn(int ch, int note, int vel) {
+			toWire.onNoteOn(ch, note, vel);
+		}
+
+		@Override
+		public void onPolyAftertouch(int ch, int note, int vel) {
+			toWire.onPolyAftertouch(ch, note, vel);
+		}
+
+		@Override
+		public void onControlChange(int ch, int ctl, int val) {
+			toWire.onControlChange(ch, ctl, val);
+		}
+
+		@Override
+		public void onProgramChange(int ch, int pgm) {
+			toWire.onProgramChange(ch, pgm);
+		}
+
+		@Override
+		public void onAftertouch(int ch, int vel) {
+			toWire.onAftertouch(ch, vel);
+		}
+
+		@Override
+		public void onPitchBend(int ch, int val) {
+			toWire.onPitchBend(ch, val);
+		}
+
+		@Override
+		public void onRawByte(int value) {
+			toWire.onRawByte(value);
+		}
+	}
+
 	public static List<UsbMidiInterface> getMidiInterfaces(Context context) {
 		List<UsbMidiInterface> midiInterfaces = new ArrayList<UsbMidiInterface>();
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
@@ -79,199 +206,69 @@ public class UsbMidiInterface implements MidiReceiver {
 				UsbInterface iface = device.getInterface(i);
 				Log.i(TAG, "device: " + device.getDeviceName() + ", class: " + iface.getInterfaceClass() + ", subclass: " + iface.getInterfaceSubclass());
 				if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
-				UsbEndpoint input = null;
-				UsbEndpoint output = null;
+				List<UsbEndpoint> inputs = new ArrayList<UsbEndpoint>();
+				List<UsbEndpoint> outputs = new ArrayList<UsbEndpoint>();
 				int epCount = iface.getEndpointCount();
 				for (int j = 0; j < epCount; ++j) {
 					UsbEndpoint ep = iface.getEndpoint(j);
 					if (ep.getMaxPacketSize() == 64 && ep.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
 						if (ep.getDirection() == UsbConstants.USB_DIR_IN) {
-							input = ep;
+							inputs.add(ep);
 						} else {
-							output = ep;
+							outputs.add(ep);
 						}
 					}
 				}
-				if (input != null || output != null) {
-					midiInterfaces.add(new UsbMidiInterface(device, iface, input, output));
+				if (!inputs.isEmpty() || !outputs.isEmpty()) {
+					midiInterfaces.add(new UsbMidiInterface(device, iface, inputs, outputs));
 				}
 			}
-			
+
 		}
 		return midiInterfaces;
 	}
-	
-	private UsbMidiInterface(UsbDevice device, UsbInterface iface, UsbEndpoint inputEndpoint, UsbEndpoint outputEndpoint) {
+
+	private UsbMidiInterface(UsbDevice device, UsbInterface iface, List<UsbEndpoint> inputs, List<UsbEndpoint> outputs) {
 		this.device = device;
 		this.iface = iface;
-		this.inputEndpoint = inputEndpoint;
-		this.outputEndpoint = outputEndpoint;
-	}
-	
-	public UsbDevice getDevice() {
-		return device;
-	}
-	
-	public boolean hasInput() {
-		return inputEndpoint != null;
-	}
-	
-	public boolean hasOutput() {
-		return outputEndpoint != null;
-	}
-	
-	public void open(Context context, int cable, MidiReceiver receiver) {
-		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
-		connection = manager.openDevice(device);
-		connection.claimInterface(iface, true);
-		this.cable = (cable << 4) & 0xf0;
-		fromWire = (receiver != null) ? new FromWireConverter(receiver) : null;
-	}
-	
-	public void close() {
-		if (connection == null) return;
-		stop();
-		connection.releaseInterface(iface);
-		connection.close();
-		connection = null;
-	}
-	
-	public void start() {
-		if (inputEndpoint == null || connection == null) return;
-		stop();
-		inputThread = new Thread() {
-			private final byte[] inputBuffer = new byte[64];
-			private final byte[] tmpBuffer = new byte[3];
-			@Override
-			public void run() {
-				while (!interrupted()) {
-					int nRead = connection.bulkTransfer(inputEndpoint, inputBuffer, inputBuffer.length, 100);
-					for (int i = 0; i < nRead; i += 4) {
-						byte b = inputBuffer[i];
-						if ((b & 0xf0) != cable) continue;
-						b &= 0x0f;
-						if (b >= 0x08) {
-							int n = 0;
-							tmpBuffer[n++] = inputBuffer[i + 1];
-							if (b != 0x0f) {
-								tmpBuffer[n++] = inputBuffer[i + 2];
-								if (b != 0x0c && b != 0x0d) {
-									tmpBuffer[n++] = inputBuffer[i + 3];
-								}
-							}
-							FromWireConverter conv = fromWire;
-							if (conv != null) {
-								conv.onBytesReceived(n, tmpBuffer);
-							}
-						}
-					}
-				}
-			}
-		};
-		inputThread.start();
-	}
-	
-	public void stop() {
-		if (connection == null) return;
-		if (inputThread != null) {
-			inputThread.interrupt();
-			try {
-				inputThread.join();
-			} catch (InterruptedException e) {
-				// Do nothing.
-			}
-			inputThread = null;
+		for (UsbEndpoint ep : inputs) {
+			this.inputs.add(new UsbMidiInput(ep));
+		}
+		for (UsbEndpoint ep: outputs) {
+			this.outputs.add(new UsbMidiOutput(ep));
 		}
 	}
 	
-	/**
-	 * Sends a note off event to the USB device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param note
-	 * @param vel
-	 */
 	@Override
-	public void onNoteOff(int ch, int note, int vel) {
-		toWire.onNoteOff(ch, note, vel);
+	public String toString() {
+		return device + ":" + iface;
 	}
 
-	/**
-	 * Sends a note on event to the USB device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param note
-	 * @param vel
-	 */
-	@Override
-	public void onNoteOn(int ch, int note, int vel) {
-		toWire.onNoteOn(ch, note, vel);
+	public UsbDevice getDevice() {
+		return device;
 	}
 
-	/**
-	 * Sends a polyphonic aftertouch event to the USB device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param note
-	 * @param vel
-	 */
-	@Override
-	public void onPolyAftertouch(int ch, int note, int vel) {
-		toWire.onPolyAftertouch(ch, note, vel);
+	public List<UsbMidiInput> getInputs() {
+		return Collections.unmodifiableList(inputs);
+	}
+	
+	public List<UsbMidiOutput> getOutputs() {
+		return Collections.unmodifiableList(outputs);
+	}
+	
+	public void open(Context context) {
+		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
+		connection = manager.openDevice(device);
+		connection.claimInterface(iface, true);
 	}
 
-	/**
-	 * Sends a control change event to the USB device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param ctl
-	 * @param val
-	 */
-	@Override
-	public void onControlChange(int ch, int ctl, int val) {
-		toWire.onControlChange(ch, ctl, val);
-	}
-
-	/**
-	 * Sends a program change event to the USB device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param pgm
-	 */
-	@Override
-	public void onProgramChange(int ch, int pgm) {
-		toWire.onProgramChange(ch, pgm);
-	}
-
-	/**
-	 * Sends a channel aftertouch event to the USB device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param vel
-	 */
-	@Override
-	public void onAftertouch(int ch, int vel) {
-		toWire.onAftertouch(ch, vel);
-	}
-
-	/**
-	 * Sends a pitch bend event to the USB device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param val pitch bend value centered at 0, ranging from -8192 to 8191
-	 */
-	@Override
-	public void onPitchBend(int ch, int val) {
-		toWire.onPitchBend(ch, val);
-	}
-
-	/**
-	 * Sends a raw MIDI byte to the USB device.
-	 * 
-	 * @param value MIDI byte to send to device; only the LSB will be sent
-	 */
-	@Override
-	public void onRawByte(int value) {
-		toWire.onRawByte(value);
+	public void close() {
+		if (connection == null) return;
+		for (UsbMidiInput input : inputs) {
+			input.stop();
+		}
+		connection.releaseInterface(iface);
+		connection.close();
+		connection = null;
 	}
 }
