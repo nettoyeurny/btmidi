@@ -21,6 +21,7 @@ import java.util.List;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -95,6 +96,7 @@ public class MainActivity extends Activity {
 		handler = new Handler();
 		setContentView(R.layout.activity_main);
 		mainText = (TextView) findViewById(R.id.mainText);
+		mainText.setMovementMethod(new ScrollingMovementMethod());
 		UsbMidiDevice.installPermissionHandler(this, new PermissionHandler() {
 
 			@Override
@@ -124,12 +126,18 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
+		String s = "USB MIDI devices";
+		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
+			s += "\n\n" + device;
+			for (UsbMidiInterface iface : device.getInterfaces()) {
+				s += "\n\n" + iface + "\n\n" + iface.getInputs() + "\n\n" + iface.getOutputs();
+			}
+		}
+		mainText.setText(s);
 		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
 			for (UsbMidiInterface iface : device.getInterfaces()) {
 				if (!iface.getInputs().isEmpty()) {
 					midiDevice = device;
-					String s = "USB MIDI device\n\n" + device + "\n\n" + iface + "\n\n" + iface.getInputs() + "\n\n" + iface.getOutputs();
-					mainText.setText(s);
 					midiDevice.requestPermission(this);
 					return;
 				}
