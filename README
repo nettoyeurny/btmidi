@@ -1,6 +1,3 @@
-WARNING!!! The usb branch contains an early, incomplete, undocumented, and
-untested version of a USB MIDI driver for Android. Use at your own risk.
-
-MIDI over Bluetooth for Android devices, including a Fritzing project
-that defines the hardware.  Detailed discussion at
+MIDI support for Android, over Bluetooth as well as USB, , including a Fritzing
+project that defines a simple Bluetooth MIDI interface.  Detailed discussion at
 http://nettoyeur.noisepages.com/.
