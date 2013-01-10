@@ -128,7 +128,8 @@ public class MainActivity extends Activity {
 			for (UsbMidiInterface iface : device.getInterfaces()) {
 				if (!iface.getInputs().isEmpty()) {
 					midiDevice = device;
-					mainText.setText("USB MIDI devices\n\n" + device.toString());
+					String s = "USB MIDI device\n\n" + device + "\n\n" + iface + "\n\n" + iface.getInputs() + "\n\n" + iface.getOutputs();
+					mainText.setText(s);
 					midiDevice.requestPermission(this);
 					return;
 				}

@@ -157,7 +157,7 @@ public class UsbMidiDevice {
 
 	public class UsbMidiOutput implements MidiReceiver {
 		private final UsbEndpoint outputEndpoint;
-		private volatile int cable = 0;
+		private volatile int cable;
 
 		private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
 			private final byte[] outBuffer = new byte[4];
@@ -184,6 +184,7 @@ public class UsbMidiDevice {
 
 		private UsbMidiOutput(UsbEndpoint ep) {
 			outputEndpoint = ep;
+			setVirtualCable(1);
 		}
 
 		@Override
@@ -289,15 +290,16 @@ public class UsbMidiDevice {
 		int ifaceCount = device.getInterfaceCount();
 		for (int i = 0; i < ifaceCount; ++i) {
 			UsbInterface iface = device.getInterface(i);
-			Log.i(TAG, "device: " + device.getDeviceName() + ", class: " + iface.getInterfaceClass() + ", subclass: " + iface.getInterfaceSubclass());
-			if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;  // Not MIDI?
+			// We really ought to check interface class and subclass, but we don't since a lot of MIDI devices don't comply with the standard.
+			// if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;
 			List<UsbEndpoint> inputs = new ArrayList<UsbEndpoint>();
 			List<UsbEndpoint> outputs = new ArrayList<UsbEndpoint>();
 			int epCount = iface.getEndpointCount();
 			for (int j = 0; j < epCount; ++j) {
 				UsbEndpoint ep = iface.getEndpoint(j);
-				if (ep.getMaxPacketSize() == 64 && ep.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
-					if (ep.getDirection() == UsbConstants.USB_DIR_IN) {
+				// If the endpoint looks like a MIDI endpoint, assume that it is one.
+				if (ep.getMaxPacketSize() == 64 && (ep.getType() & UsbConstants.USB_ENDPOINT_XFERTYPE_MASK) == UsbConstants.USB_ENDPOINT_XFER_BULK) {
+					if ((ep.getDirection() & UsbConstants.USB_ENDPOINT_DIR_MASK) == UsbConstants.USB_DIR_IN) {
 						inputs.add(ep);
 					} else {
 						outputs.add(ep);
