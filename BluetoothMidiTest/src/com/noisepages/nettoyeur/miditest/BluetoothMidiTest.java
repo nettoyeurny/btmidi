@@ -28,7 +28,7 @@ import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 
-public class MidiTest extends Activity implements OnClickListener {
+public class BluetoothMidiTest extends Activity implements OnClickListener {
 
 	private static final String TAG = "Midi Test";
 

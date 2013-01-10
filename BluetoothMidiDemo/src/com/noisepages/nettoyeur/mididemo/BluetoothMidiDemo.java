@@ -32,7 +32,7 @@ import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 
-public class PianoActivity extends Activity implements View.OnTouchListener {
+public class BluetoothMidiDemo extends Activity implements View.OnTouchListener {
 
 	private static final String TAG = "BluetoothMidiDemo";
 	private static final int CONNECT = 1;
@@ -272,7 +272,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 						DeviceListActivity.DEVICE_ADDRESS);
 				try {
 					midiService.connect(address, new Intent(this,
-							PianoActivity.class),
+							BluetoothMidiDemo.class),
 							"Select to return to BluetoothMidiDemo.");
 				} catch (IOException e) {
 					toast(e.getMessage());

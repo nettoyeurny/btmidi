@@ -43,7 +43,7 @@ import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
  * 
  * @author Peter Brinkmann
  */
-public class BluetoothMidiPlayerActivity extends Activity implements BluetoothMidiPlayerReceiver, OnClickListener {
+public class BluetoothMidiPlayer extends Activity implements BluetoothMidiPlayerReceiver, OnClickListener {
 
 	private static final int CONNECT = 1;
 
@@ -58,7 +58,7 @@ public class BluetoothMidiPlayerActivity extends Activity implements BluetoothMi
 		@Override
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			midiService = ((BluetoothMidiPlayerService.BluetoothSppBinder) service).getService();
-			midiService.setReceiver(BluetoothMidiPlayerActivity.this);
+			midiService.setReceiver(BluetoothMidiPlayer.this);
 			Uri uri = getIntent().getData();
 			if (uri != null) {
 				try {
@@ -121,7 +121,7 @@ public class BluetoothMidiPlayerActivity extends Activity implements BluetoothMi
 			if (resultCode == Activity.RESULT_OK) {
 				String address = data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS);
 				try {
-					midiService.connect(address, new Intent(getApplicationContext(), BluetoothMidiPlayerActivity.class), "Return to MIDI Player");
+					midiService.connect(address, new Intent(getApplicationContext(), BluetoothMidiPlayer.class), "Return to MIDI Player");
 				} catch (IOException e) {
 					toast(e.getMessage());
 				}
@@ -161,7 +161,7 @@ public class BluetoothMidiPlayerActivity extends Activity implements BluetoothMi
 		switch (v.getId()) {
 		case R.id.connectButton:
 			if (!isConnected()) {
-				startActivityForResult(new Intent(BluetoothMidiPlayerActivity.this, DeviceListActivity.class), CONNECT);
+				startActivityForResult(new Intent(BluetoothMidiPlayer.this, DeviceListActivity.class), CONNECT);
 			} else {
 				midiService.stop();
 			}

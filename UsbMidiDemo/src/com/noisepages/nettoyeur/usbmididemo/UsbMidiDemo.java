@@ -25,7 +25,7 @@ import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInput;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInterface;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiOutput;
 
-public class PianoActivity extends Activity implements View.OnTouchListener {
+public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 
 	private static final String TAG = "UsbMidiDemo";
 	private boolean touchState = false;
@@ -159,7 +159,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 
 			@Override
 			public void onPermissionGranted() {
-				midiDevice.open(PianoActivity.this);
+				midiDevice.open(UsbMidiDemo.this);
 				List<UsbMidiInput> inputs = midiDevice.getInterfaces().get(0).getInputs();
 				if (!inputs.isEmpty()) {
 					UsbMidiInput input = inputs.get(0);

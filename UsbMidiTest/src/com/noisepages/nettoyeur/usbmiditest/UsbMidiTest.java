@@ -31,7 +31,7 @@ import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInput;
 import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInterface;
 
-public class MainActivity extends Activity {
+public class UsbMidiTest extends Activity {
 
 	private static final String TAG = "UsbMidiTest";
 
@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
 
 			@Override
 			public void onPermissionGranted() {
-				midiDevice.open(MainActivity.this);
+				midiDevice.open(UsbMidiTest.this);
 				List<UsbMidiInput> inputs = midiDevice.getInterfaces().get(0).getInputs();
 				if (!inputs.isEmpty()) {
 					UsbMidiInput input = inputs.get(0);
