@@ -155,7 +155,7 @@ public class UsbMidiDevice {
 		}
 	}
 
-	public class UsbMidiOutput implements MidiReceiver {
+	public class UsbMidiOutput {
 		private final UsbEndpoint outputEndpoint;
 		private volatile int cable;
 
@@ -196,44 +196,8 @@ public class UsbMidiDevice {
 			cable = (c << 4) & 0xf0;
 		}
 
-		@Override
-		public void onNoteOff(int ch, int note, int vel) {
-			toWire.onNoteOff(ch, note, vel);
-		}
-
-		@Override
-		public void onNoteOn(int ch, int note, int vel) {
-			toWire.onNoteOn(ch, note, vel);
-		}
-
-		@Override
-		public void onPolyAftertouch(int ch, int note, int vel) {
-			toWire.onPolyAftertouch(ch, note, vel);
-		}
-
-		@Override
-		public void onControlChange(int ch, int ctl, int val) {
-			toWire.onControlChange(ch, ctl, val);
-		}
-
-		@Override
-		public void onProgramChange(int ch, int pgm) {
-			toWire.onProgramChange(ch, pgm);
-		}
-
-		@Override
-		public void onAftertouch(int ch, int vel) {
-			toWire.onAftertouch(ch, vel);
-		}
-
-		@Override
-		public void onPitchBend(int ch, int val) {
-			toWire.onPitchBend(ch, val);
-		}
-
-		@Override
-		public void onRawByte(int value) {
-			toWire.onRawByte(value);
+		public MidiReceiver getMidiOut() {
+			return toWire;
 		}
 	}
 

@@ -40,9 +40,8 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 			R.drawable.white31, R.drawable.white41, R.drawable.black31,
 			R.drawable.white51, R.drawable.black41, R.drawable.white61,
 			R.drawable.black51, R.drawable.white71, R.drawable.white81 };
-	private UsbMidiOutput midiOutput;
-
 	private UsbMidiDevice midiDevice = null;
+	private MidiReceiver midiOut = null;
 	
 	private final MidiReceiver receiver = new MidiReceiver() {
 		@Override
@@ -169,7 +168,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 				}
 				List<UsbMidiOutput> outputs = midiDevice.getInterfaces().get(0).getOutputs();
 				if (!outputs.isEmpty()) {
-					midiOutput = outputs.get(0);
+					midiOut = outputs.get(0).getMidiOut();
 				}
 			}
 
@@ -211,7 +210,7 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 	}
 	
 	public boolean onTouch(View view, MotionEvent motionEvent) {
-		if (midiOutput == null) return false;
+		if (midiOut == null) return false;
 		if (!(view instanceof ImageButton)) return false;
 		ImageButton key = (ImageButton) view;
 		Object tag = key.getTag();
@@ -221,11 +220,11 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		int action = motionEvent.getAction();
 		if (action == MotionEvent.ACTION_DOWN && !touchState) {
 			touchState = true;
-			midiOutput.onNoteOn(0, index + 60, 100);
+			midiOut.onNoteOn(0, index + 60, 100);
 			keyDown(index);
 		} else if (action == MotionEvent.ACTION_UP && touchState) {
 			touchState = false;
-			midiOutput.onNoteOff(0, index + 60, 64);
+			midiOut.onNoteOff(0, index + 60, 64);
 			keyUp(index);
 		}
 		return true;

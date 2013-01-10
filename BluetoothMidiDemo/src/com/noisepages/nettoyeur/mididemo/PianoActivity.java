@@ -222,11 +222,11 @@ public class PianoActivity extends Activity implements View.OnTouchListener {
 		int action = motionEvent.getAction();
 		if (action == MotionEvent.ACTION_DOWN && !touchState) {
 			touchState = true;
-			midiService.onNoteOn(0, index + 60, 100);
+			midiService.getMidiOut().onNoteOn(0, index + 60, 100);
 			keyDown(index);
 		} else if (action == MotionEvent.ACTION_UP && touchState) {
 			touchState = false;
-			midiService.onNoteOff(0, index + 60, 64);
+			midiService.getMidiOut().onNoteOff(0, index + 60, 64);
 			keyUp(index);
 		}
 		return true;

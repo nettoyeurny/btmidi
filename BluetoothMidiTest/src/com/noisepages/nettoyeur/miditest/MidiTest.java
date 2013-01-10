@@ -194,9 +194,9 @@ public class MidiTest extends Activity implements OnClickListener {
 			break;
 		case R.id.play_button:
 			if (!on) {
-				midiService.onNoteOn(0, note, 80);
+				midiService.getMidiOut().onNoteOn(0, note, 80);
 			} else {
-				midiService.onNoteOff(0, note, 64);
+				midiService.getMidiOut().onNoteOff(0, note, 64);
 				note++;
 			}
 			on = !on;

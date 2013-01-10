@@ -41,7 +41,7 @@ import com.noisepages.nettoyeur.midi.ToWireConverter;
  * 
  * @author Peter Brinkmann
  */
-public class BluetoothMidiService extends Service implements MidiReceiver {
+public class BluetoothMidiService extends Service {
 
 	private static final String TAG = "BluetoothMidiService";
 	private static final int ID = 1;
@@ -110,7 +110,7 @@ public class BluetoothMidiService extends Service implements MidiReceiver {
 	 * This method must be called before any other methods are called.  It sets the receiver for
 	 * handling events read from the Bluetooth input stream.
 	 * 
-	 * @param receiver
+	 * @param receiver for handling events from the Bluetooth input stream
 	 * @throws IOException thrown if Bluetooth is unavailable or disabled
 	 */
 	public void init(BluetoothSppObserver observer, MidiReceiver receiver) throws IOException {
@@ -170,93 +170,9 @@ public class BluetoothMidiService extends Service implements MidiReceiver {
 	}
 
 	/**
-	 * Sends a note off event to the Bluetooth device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param note
-	 * @param vel
+	 * @return the MIDI receiver that sends messages to the Bluetooth output stream
 	 */
-	@Override
-	public void onNoteOff(int ch, int note, int vel) {
-		toWire.onNoteOff(ch, note, vel);
-	}
-
-	/**
-	 * Sends a note on event to the Bluetooth device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param note
-	 * @param vel
-	 */
-	@Override
-	public void onNoteOn(int ch, int note, int vel) {
-		toWire.onNoteOn(ch, note, vel);
-	}
-
-	/**
-	 * Sends a polyphonic aftertouch event to the Bluetooth device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param note
-	 * @param vel
-	 */
-	@Override
-	public void onPolyAftertouch(int ch, int note, int vel) {
-		toWire.onPolyAftertouch(ch, note, vel);
-	}
-
-	/**
-	 * Sends a control change event to the Bluetooth device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param ctl
-	 * @param val
-	 */
-	@Override
-	public void onControlChange(int ch, int ctl, int val) {
-		toWire.onControlChange(ch, ctl, val);
-	}
-
-	/**
-	 * Sends a program change event to the Bluetooth device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param pgm
-	 */
-	@Override
-	public void onProgramChange(int ch, int pgm) {
-		toWire.onProgramChange(ch, pgm);
-	}
-
-	/**
-	 * Sends a channel aftertouch event to the Bluetooth device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param vel
-	 */
-	@Override
-	public void onAftertouch(int ch, int vel) {
-		toWire.onAftertouch(ch, vel);
-	}
-
-	/**
-	 * Sends a pitch bend event to the Bluetooth device.
-	 * 
-	 * @param ch channel starting at 0
-	 * @param val pitch bend value centered at 0, ranging from -8192 to 8191
-	 */
-	@Override
-	public void onPitchBend(int ch, int val) {
-		toWire.onPitchBend(ch, val);
-	}
-
-	/**
-	 * Sends a raw MIDI byte to the Bluetooth device.
-	 * 
-	 * @param value MIDI byte to send to device; only the LSB will be sent
-	 */
-	@Override
-	public void onRawByte(int value) {
-		toWire.onRawByte(value);
+	public MidiReceiver getMidiOut() {
+		return toWire;
 	}
 }
