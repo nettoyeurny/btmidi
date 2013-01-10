@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.noisepages.nettoyeur.usbmidi;
+package com.noisepages.nettoyeur.usb.midi;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +38,7 @@ import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
+import com.noisepages.nettoyeur.usb.PermissionHandler;
 
 /**
  * MIDI-specific wrapper for USB devices. Instances of this class will implicitly manage interfaces

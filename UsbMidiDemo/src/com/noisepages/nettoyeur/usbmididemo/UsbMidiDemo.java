@@ -19,11 +19,11 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
-import com.noisepages.nettoyeur.usbmidi.PermissionHandler;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInput;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInterface;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiOutput;
+import com.noisepages.nettoyeur.usb.PermissionHandler;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInterface;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiOutput;
 
 public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 

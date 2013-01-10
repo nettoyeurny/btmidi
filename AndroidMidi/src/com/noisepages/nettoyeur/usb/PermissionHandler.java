@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.noisepages.nettoyeur.usbmidi;
+package com.noisepages.nettoyeur.usb;
 
 /**
  * Interface for handling responses to USB permission requests.

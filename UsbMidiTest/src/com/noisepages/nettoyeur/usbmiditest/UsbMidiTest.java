@@ -26,10 +26,10 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
-import com.noisepages.nettoyeur.usbmidi.PermissionHandler;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInput;
-import com.noisepages.nettoyeur.usbmidi.UsbMidiDevice.UsbMidiInterface;
+import com.noisepages.nettoyeur.usb.PermissionHandler;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInterface;
 
 public class UsbMidiTest extends Activity {
 
