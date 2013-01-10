@@ -39,6 +39,14 @@ import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
 
+/**
+ * MIDI-specific wrapper for USB devices. Instances of this class will implicitly manage interfaces
+ * and USB endpoints. MIDI connections (both input and output) go through the {@link MidiReceiver}
+ * interface. MIDI inputs take receiver instances that they'll invoke on incoming events; MIDI
+ * outputs provide receivers through which client code can send out MIDI events.
+ * 
+ * @author Peter Brinkmann (peter.brinkmann@gmail.com)
+ */
 public class UsbMidiDevice {
 
 	private final static String TAG = "UsbMidiDevice";
@@ -50,6 +58,10 @@ public class UsbMidiDevice {
 	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
 	private volatile UsbDeviceConnection connection = null;
 
+	/**
+	 * MIDI-specific wrapper for USB interfaces within a USB devices. This class doesn't do much and mostly
+	 * serves to organize inputs and outputs.
+	 */
 	public class UsbMidiInterface {
 		private final UsbInterface iface;
 		private final List<UsbMidiInput> inputs;
@@ -69,14 +81,23 @@ public class UsbMidiDevice {
 			return iface.toString();
 		}
 
+		/**
+		 * @return an unmodifiable list of MIDI inputs belonging to this interface
+		 */
 		public List<UsbMidiInput> getInputs() {
 			return Collections.unmodifiableList(inputs);
 		}
 
+		/**
+		 * @return an unmodifiable list of MIDI outputs belonging to this interface
+		 */
 		public List<UsbMidiOutput> getOutputs() {
 			return Collections.unmodifiableList(outputs);
 		}
 
+		/**
+		 * Stops listening threads on all MIDI inputs belonging to this interface.
+		 */
 		public void stop() {
 			for (UsbMidiInput input : inputs) {
 				input.stop();
@@ -84,14 +105,17 @@ public class UsbMidiDevice {
 		}
 	}
 
+	/**
+	 * Wrapper for USB MIDI input endpoints.
+	 */
 	public class UsbMidiInput {
 		private final UsbEndpoint inputEndpoint;
 		private volatile FromWireConverter fromWire;
 		private volatile int cable = -1;
 		private volatile Thread inputThread = null;
 
-		private UsbMidiInput(UsbEndpoint ep) {
-			inputEndpoint = ep;
+		private UsbMidiInput(UsbEndpoint endpoint) {
+			inputEndpoint = endpoint;
 		}
 
 		@Override
@@ -99,14 +123,26 @@ public class UsbMidiDevice {
 			return "in:" + inputEndpoint;
 		}
 
-		public void setReceiver(MidiReceiver r) {
-			fromWire = new FromWireConverter(r);
+		/**
+		 * Sets the receiver for incoming MIDI events.
+		 */
+		public void setReceiver(MidiReceiver receiver) {
+			fromWire = new FromWireConverter(receiver);
 		}
 
+		/**
+		 * Sets the virtual cable to listen to; a value of -1 (the default) will
+		 * enable reception from all virtual cables.
+		 * 
+		 * @param c virtual cable number, or -1 if listening on all cables
+		 */
 		public void setVirtualCable(int c) {
 			cable = (c >= 0) ? (c << 4) & 0xf0 : -1;
 		}
 
+		/**
+		 * Starts listening to this MIDI input; requires a receiver to be in place.
+		 */
 		public void start() {
 			if (fromWire == null) {
 				throw new IllegalStateException("no receiver");
@@ -142,6 +178,9 @@ public class UsbMidiDevice {
 			inputThread.start();
 		}
 
+		/**
+		 * Stops listening to this input.
+		 */
 		public void stop() {
 			if (inputThread != null) {
 				inputThread.interrupt();
@@ -155,6 +194,9 @@ public class UsbMidiDevice {
 		}
 	}
 
+	/**
+	 * Wrapper for USB MIDI output endpoints.
+	 */
 	public class UsbMidiOutput {
 		private final UsbEndpoint outputEndpoint;
 		private volatile int cable;
@@ -192,6 +234,11 @@ public class UsbMidiDevice {
 			return "out:" + outputEndpoint;
 		}
 
+		/**
+		 * Sets the virtual cable to write to; the default is 0.
+		 * 
+		 * @param c virtual cable number
+		 */
 		public void setVirtualCable(int c) {
 			cable = (c << 4) & 0xf0;
 		}
@@ -201,6 +248,14 @@ public class UsbMidiDevice {
 		}
 	}
 
+	/**
+	 * Convenience method for handling responses to USB permission requests, to be called in the onCreate method of
+	 * activities that connect to USB MIDI devices. Activities that use call this method also have to uninstall the
+	 * permission handler in their onDestroy method (see uninstallPermissionHandler).
+	 * 
+	 * @param context the current context, e.g., the activity invoking this method
+	 * @param handler
+	 */
 	public static void installPermissionHandler(Context context, final PermissionHandler handler) {
 		uninstallPermissionHandler(context);
 		broadcastReceiver = new BroadcastReceiver() {
@@ -222,6 +277,12 @@ public class UsbMidiDevice {
 		context.registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_PERMISSION));
 	}
 
+	/**
+	 * Uninstalls the permission handler; must be called in the onDestroy method of activities that install
+	 * a permission handler.
+	 * 
+	 * @param context the current context, e.g., the activity invoking this method
+	 */
 	public static void uninstallPermissionHandler(Context context) {
 		if (broadcastReceiver != null) {
 			context.unregisterReceiver(broadcastReceiver);
@@ -229,6 +290,12 @@ public class UsbMidiDevice {
 		}
 	}
 	
+	/**
+	 * Convenience method for requesting permission to use the USB device; may only be called if a permission handler
+	 * is installed.
+	 * 
+	 * @param context the current context, e.g., the activity invoking this method
+	 */
 	public void requestPermission(Context context) {
 		if (broadcastReceiver == null) {
 			throw new IllegalStateException("installPermissionHandler must be called before requesting permission");
@@ -237,6 +304,15 @@ public class UsbMidiDevice {
 				PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0));
 	}
 
+	/**
+	 * Scans the currently attached USB devices and returns those the look like MIDI devices. Note that there may be
+	 * false positives since this method will list all devices with endpoints that look like MIDI endpoints. While
+	 * this behavior is potentially awkward, it is preferable to the wholesale suppression of devices that are MIDI
+	 * devices but fail to properly identify themselves as such (sadly, this is a common problem).
+	 * 
+	 * @param context the current context, e.g., the activity invoking this method
+	 * @return list of (probable) MIDI devices
+	 */
 	public static List<UsbMidiDevice> getMidiDevices(Context context) {
 		List<UsbMidiDevice> midiDevices = new ArrayList<UsbMidiDevice>();
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
@@ -249,7 +325,7 @@ public class UsbMidiDevice {
 		return midiDevices;
 	}
 
-	public UsbMidiDevice(UsbDevice device) {
+	private UsbMidiDevice(UsbDevice device) {
 		this.device = device;
 		int ifaceCount = device.getInterfaceCount();
 		for (int i = 0; i < ifaceCount; ++i) {
@@ -293,10 +369,18 @@ public class UsbMidiDevice {
 		return device.toString();
 	}
 
+	/**
+	 * @return an unmodifiable list of MIDI interfaces belonging to this device.
+	 */
 	public List<UsbMidiInterface> getInterfaces() {
 		return Collections.unmodifiableList(interfaces);
 	}
 
+	/**
+	 * Opens a USB connection to this device.
+	 * 
+	 * @param context the current context, e.g., the activity invoking this method
+	 */
 	public void open(Context context) {
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
 		connection = manager.openDevice(device);
@@ -305,6 +389,9 @@ public class UsbMidiDevice {
 		}
 	}
 
+	/**
+	 * Stops listening on all inputs and closes the current USB connection, if any.
+	 */
 	public void close() {
 		if (connection == null) return;
 		for (UsbMidiInterface iface : interfaces) {

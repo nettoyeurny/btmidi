@@ -16,7 +16,20 @@
 
 package com.noisepages.nettoyeur.usbmidi;
 
+/**
+ * Interface for handling responses to USB permission requests.
+ * 
+ * @author Peter Brinkmann (peter.brinkmann@gmail.com)
+ */
 public interface PermissionHandler {
+	
+	/**
+	 * Called when a request for USB permission has been granted.
+	 */
 	public void onPermissionGranted();
+	
+	/**
+	 * Called when a request for USB permission has been denied.
+	 */
 	public void onPermissionDenied();
 }
