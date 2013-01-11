@@ -49,6 +49,10 @@ import com.noisepages.nettoyeur.usb.PermissionHandler;
  * Note: Activities that use this class need to specify android:launchMode="singleTask" in their
  * manifest to make sure that the USB connection won't be lost on restart.
  * 
+ * Acknowledgment: The implementation of the USB driver was done from scratch, but the idea of
+ * writing a soft driver in Java came from Kaoru Shoji's USB-MIDI-Driver
+ * (https://github.com/kshoji/USB-MIDI-Driver).
+ * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
 public class UsbMidiDevice {

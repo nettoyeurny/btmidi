@@ -1,3 +1,7 @@
 MIDI support for Android, over Bluetooth as well as USB, including a Fritzing
 project that defines a simple Bluetooth MIDI interface.  Detailed discussion at
 http://nettoyeur.noisepages.com/.
+
+Acknowledgment: The implementation of the USB driver was done from scratch, but
+the idea of writing a soft driver in Java came from Kaoru Shoji's
+USB-MIDI-Driver (https://github.com/kshoji/USB-MIDI-Driver).
