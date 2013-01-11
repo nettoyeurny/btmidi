@@ -13,6 +13,7 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name="com.noisepages.nettoyeur.usbmiditest.UsbMidiTest"
+            android:launchMode="singleTask"
             android:label="@string/title_activity_main" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

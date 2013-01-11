@@ -115,17 +115,19 @@ public class UsbMidiTest extends Activity {
 				Log.d(TAG, "permission denied for device " + midiDevice);
 			}
 		});
+		findUsbMidiDevice();
 	}
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		if (midiDevice != null) {
+			midiDevice.close();
+		}
 		UsbMidiDevice.uninstallPermissionHandler(this);
 	}
 	
-	@Override
-	protected void onStart() {
-		super.onStart();
+	private void findUsbMidiDevice() {
 		String s = "USB MIDI devices";
 		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
 			s += "\n\n" + device;
@@ -144,13 +146,5 @@ public class UsbMidiTest extends Activity {
 			}
 		}
 		mainText.setText("No USB MIDI devices found");
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-		if (midiDevice != null) {
-			midiDevice.close();
-		}
 	}
 }

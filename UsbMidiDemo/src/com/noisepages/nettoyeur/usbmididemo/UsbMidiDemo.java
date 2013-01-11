@@ -177,17 +177,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 				toast(TAG + ": permission denied for device " + midiDevice);
 			}
 		});
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		UsbMidiDevice.uninstallPermissionHandler(this);
-	}
-
-	@Override
-	protected void onStart() {
-		super.onStart();
+		
 		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
 			for (UsbMidiInterface iface : device.getInterfaces()) {
 				if (!iface.getInputs().isEmpty()) {
@@ -202,20 +192,20 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 	}
 
 	@Override
-	protected void onStop() {
-		super.onStop();
+	protected void onDestroy() {
+		super.onDestroy();
 		if (midiDevice != null) {
 			midiDevice.close();
 		}
+		UsbMidiDevice.uninstallPermissionHandler(this);
 	}
-	
+
 	public boolean onTouch(View view, MotionEvent motionEvent) {
 		if (midiOut == null) return false;
 		if (!(view instanceof ImageButton)) return false;
 		ImageButton key = (ImageButton) view;
 		Object tag = key.getTag();
-		if (tag == null || !(tag instanceof Integer))
-			return false;
+		if (tag == null || !(tag instanceof Integer)) return false;
 		int index = (Integer) tag;
 		int action = motionEvent.getAction();
 		if (action == MotionEvent.ACTION_DOWN && !touchState) {

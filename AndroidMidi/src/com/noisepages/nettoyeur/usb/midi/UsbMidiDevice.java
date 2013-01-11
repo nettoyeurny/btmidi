@@ -46,6 +46,9 @@ import com.noisepages.nettoyeur.usb.PermissionHandler;
  * interface. MIDI inputs take receiver instances that they'll invoke on incoming events; MIDI
  * outputs provide receivers through which client code can send out MIDI events.
  * 
+ * Note: Activities that use this class need to specify android:launchMode="singleTask" in their
+ * manifest to make sure that the USB connection won't be lost on restart.
+ * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
 public class UsbMidiDevice {
