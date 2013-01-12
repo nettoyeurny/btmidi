@@ -45,7 +45,7 @@ public class DeviceInfo {
 		 * Callback invoked on conclusion of retrieval of device information.
 		 * 
 		 * @param device for which to retrieve information
-		 * @param info for the given device, or null on failure
+		 * @param info for the given device
 		 */
 		public void onDeviceInfo(UsbDevice device, DeviceInfo info);
 
