@@ -274,9 +274,9 @@ public class UsbMidiDevice {
 					synchronized (this) {
 						UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 						if (device != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-							handler.onPermissionGranted();
+							handler.onPermissionGranted(device);
 						} else {
-							handler.onPermissionDenied();
+							handler.onPermissionDenied(device);
 						}
 					}
 				}
@@ -377,6 +377,18 @@ public class UsbMidiDevice {
 		return device.toString();
 	}
 
+	/**
+	 * This method seems to break encapsulation, but it's needed since the handling of permissions
+	 * involves raw UsbDevice instances (see the installPermissionHandler method in this class).
+	 * Besides, raw USB devices are also available from UsbManager.getDeviceList(), and so this
+	 * method doesn't actually expose anything that isn't publicly available to begin with.
+	 * 
+	 * @return the underlying UsbDevice instance
+	 */
+	public UsbDevice getUsbDevice() {
+		return device;
+	}
+	
 	/**
 	 * @return an unmodifiable list of MIDI interfaces belonging to this device.
 	 */

@@ -19,6 +19,7 @@ package com.noisepages.nettoyeur.usbmiditest;
 import java.util.List;
 
 import android.app.Activity;
+import android.hardware.usb.UsbDevice;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
@@ -100,7 +101,7 @@ public class UsbMidiTest extends Activity {
 		UsbMidiDevice.installPermissionHandler(this, new PermissionHandler() {
 
 			@Override
-			public void onPermissionGranted() {
+			public void onPermissionGranted(UsbDevice device) {
 				midiDevice.open(UsbMidiTest.this);
 				List<UsbMidiInput> inputs = midiDevice.getInterfaces().get(0).getInputs();
 				if (!inputs.isEmpty()) {
@@ -111,7 +112,7 @@ public class UsbMidiTest extends Activity {
 			}
 
 			@Override
-			public void onPermissionDenied() {
+			public void onPermissionDenied(UsbDevice device) {
 				Log.d(TAG, "permission denied for device " + midiDevice);
 			}
 		});

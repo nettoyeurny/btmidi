@@ -16,6 +16,8 @@
 
 package com.noisepages.nettoyeur.usb;
 
+import android.hardware.usb.UsbDevice;
+
 /**
  * Interface for handling responses to USB permission requests.
  * 
@@ -25,11 +27,15 @@ public interface PermissionHandler {
 	
 	/**
 	 * Called when a request for USB permission has been granted.
+	 * 
+	 * @param device for which permission has been granted
 	 */
-	public void onPermissionGranted();
+	public void onPermissionGranted(UsbDevice device);
 	
 	/**
 	 * Called when a request for USB permission has been denied.
+	 * 
+	 * @param device for which permission has been denied
 	 */
-	public void onPermissionDenied();
+	public void onPermissionDenied(UsbDevice device);
 }
