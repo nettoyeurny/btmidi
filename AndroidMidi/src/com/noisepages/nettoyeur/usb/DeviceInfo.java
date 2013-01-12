@@ -48,7 +48,7 @@ public class DeviceInfo {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return new DeviceInfo(vendorName != null ? vendorName : vendorHex, productName != null ? productName : productHex);
+		return (vendorName != null && productName != null) ? new DeviceInfo(vendorName, productName) : null;
 	}
 
 	private static String getName(String url) throws Exception {
