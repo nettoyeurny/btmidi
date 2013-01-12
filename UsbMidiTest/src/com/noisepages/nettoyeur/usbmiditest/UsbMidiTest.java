@@ -27,6 +27,8 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
+import com.noisepages.nettoyeur.usb.DeviceInfo;
+import com.noisepages.nettoyeur.usb.DeviceInfo.DeviceInfoCallback;
 import com.noisepages.nettoyeur.usb.PermissionHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
@@ -141,6 +143,17 @@ public class UsbMidiTest extends Activity {
 			for (UsbMidiInterface iface : device.getInterfaces()) {
 				if (!iface.getInputs().isEmpty()) {
 					midiDevice = device;
+					device.retrieveReadableDeviceInfo(new DeviceInfoCallback() {
+						@Override
+						public void onDeviceInfo(UsbDevice device, DeviceInfo info) {
+							mainText.setText("Retrieved info: " + info + "\n\n" + mainText.getText());
+						}
+						
+						@Override
+						public void onFailure(UsbDevice device) {
+							mainText.setText("No human readable device info available.\n\n" + mainText.getText());
+						}
+					});
 					midiDevice.requestPermission(this);
 					return;
 				}

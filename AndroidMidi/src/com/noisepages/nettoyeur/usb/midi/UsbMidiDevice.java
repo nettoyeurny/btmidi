@@ -38,6 +38,8 @@ import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
+import com.noisepages.nettoyeur.usb.DeviceInfo;
+import com.noisepages.nettoyeur.usb.DeviceInfo.DeviceInfoCallback;
 import com.noisepages.nettoyeur.usb.PermissionHandler;
 
 /**
@@ -61,8 +63,9 @@ public class UsbMidiDevice {
 	private static final String ACTION_USB_PERMISSION = "com.noisepages.nettoyeur.usbmidi.USB_PERMISSION";
 
 	private static BroadcastReceiver broadcastReceiver = null;
-	
+
 	private final UsbDevice device;
+	private volatile DeviceInfo info;
 	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
 	private volatile UsbDeviceConnection connection = null;
 
@@ -297,7 +300,7 @@ public class UsbMidiDevice {
 			broadcastReceiver = null;
 		}
 	}
-	
+
 	/**
 	 * Convenience method for requesting permission to use the USB device; may only be called if a permission handler
 	 * is installed.
@@ -335,6 +338,7 @@ public class UsbMidiDevice {
 
 	private UsbMidiDevice(UsbDevice device) {
 		this.device = device;
+		info = new DeviceInfo(device);
 		int ifaceCount = device.getInterfaceCount();
 		for (int i = 0; i < ifaceCount; ++i) {
 			UsbInterface iface = device.getInterface(i);
@@ -378,6 +382,43 @@ public class UsbMidiDevice {
 	}
 
 	/**
+	 * Note: The return value may change over the lifetime of this object. By default, it is populated
+	 * with numerical information from the underlying UsbDevice object, but if retrieveReadableDeviceInfo
+	 * is invoked, then it may be replaced with human readable data retrieved from the web.
+	 * 
+	 * @return the current device info
+	 */
+	public DeviceInfo getCurrentDeviceInfo() {
+		return info;
+	}
+
+	/**
+	 * Attempts to asynchronously replace the default device info with human readable device info from the web.
+	 * 
+	 * Requires android.permission.INTERNET.
+	 * 
+	 * @param callback to be invoked on success; may be null if no notification is desired
+	 */
+	public void retrieveReadableDeviceInfo(final DeviceInfoCallback callback) {
+		DeviceInfo.retrieveDeviceInfoAsync(device, new DeviceInfoCallback() {
+			@Override
+			public void onDeviceInfo(UsbDevice device, DeviceInfo info) {
+				UsbMidiDevice.this.info = info;
+				if (callback != null) {
+					callback.onDeviceInfo(device, info);
+				}
+			}
+
+			@Override
+			public void onFailure(UsbDevice device) {
+				if (callback != null) {
+					callback.onFailure(device);
+				}
+			}
+		});
+	}
+
+	/**
 	 * This method seems to break encapsulation, but it's needed since the handling of permissions
 	 * involves raw UsbDevice instances (see the installPermissionHandler method in this class).
 	 * Besides, raw USB devices are also available from UsbManager.getDeviceList(), and so this
@@ -388,7 +429,7 @@ public class UsbMidiDevice {
 	public UsbDevice getUsbDevice() {
 		return device;
 	}
-	
+
 	/**
 	 * @return an unmodifiable list of MIDI interfaces belonging to this device.
 	 */
