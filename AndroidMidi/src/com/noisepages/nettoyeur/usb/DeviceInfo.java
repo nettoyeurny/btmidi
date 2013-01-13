@@ -37,25 +37,6 @@ public class DeviceInfo {
 	private final String product;
 
 	/**
-	 * Callback for asynchronous retrieval of device information.
-	 */
-	public static interface DeviceInfoCallback {
-
-		/**
-		 * Callback invoked on conclusion of retrieval of device information.
-		 * 
-		 * @param device for which to retrieve information
-		 * @param info for the given device
-		 */
-		public void onDeviceInfo(UsbDevice device, DeviceInfo info);
-
-		/**
-		 * Callback invoked when no device info was found.
-		 */
-		public void onFailure(UsbDevice device);
-	}
-
-	/**
 	 * Convenience method for asynchronous retrieval of device information.
 	 * 
 	 * Requires android.permission.INTERNET.

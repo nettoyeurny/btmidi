@@ -39,7 +39,7 @@ import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
 import com.noisepages.nettoyeur.usb.DeviceInfo;
-import com.noisepages.nettoyeur.usb.DeviceInfo.DeviceInfoCallback;
+import com.noisepages.nettoyeur.usb.DeviceInfoCallback;
 import com.noisepages.nettoyeur.usb.PermissionHandler;
 
 /**

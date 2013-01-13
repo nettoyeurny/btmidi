@@ -28,7 +28,7 @@ import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.usb.DeviceInfo;
-import com.noisepages.nettoyeur.usb.DeviceInfo.DeviceInfoCallback;
+import com.noisepages.nettoyeur.usb.DeviceInfoCallback;
 import com.noisepages.nettoyeur.usb.PermissionHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
