@@ -24,7 +24,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.hardware.usb.UsbDevice;
-import android.os.AsyncTask;
 import android.os.Parcel;
 import android.os.Parcelable;
 
@@ -37,32 +36,6 @@ public class DeviceInfo implements Parcelable {
 
 	private final String vendor;
 	private final String product;
-
-	/**
-	 * Convenience method for asynchronous retrieval of device information.
-	 * 
-	 * Requires android.permission.INTERNET.
-	 * 
-	 * @param device for which to retrieve information
-	 * @param callback to invoke upon completion; will be invoked on the main thread.
-	 */
-	public static void retrieveDeviceInfoAsync(final UsbDevice device, final DeviceInfoCallback callback) {
-		new AsyncTask<UsbDevice, Void, DeviceInfo>() {
-			@Override
-			protected DeviceInfo doInBackground(UsbDevice... params) {
-				return retrieveDeviceInfo(device);
-			}
-
-			@Override
-			protected void onPostExecute(DeviceInfo result) {
-				if (result != null) {
-					callback.onDeviceInfo(device, result);
-				} else {
-					callback.onFailure(device);
-				}
-			};
-		}.execute();
-	}
 
 	/**
 	 * Synchronously retrieves device info from the web. This method must not be invoked on the main thread as it

@@ -20,6 +20,7 @@ import java.util.List;
 
 import android.app.Activity;
 import android.hardware.usb.UsbDevice;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
@@ -28,7 +29,6 @@ import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.usb.DeviceInfo;
-import com.noisepages.nettoyeur.usb.DeviceInfoCallback;
 import com.noisepages.nettoyeur.usb.PermissionHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
@@ -129,7 +129,23 @@ public class UsbMidiTest extends Activity {
 		}
 		UsbMidiDevice.uninstallPermissionHandler(this);
 	}
-	
+
+	private final AsyncTask<UsbMidiDevice, Void, DeviceInfo> lookupTask = new AsyncTask<UsbMidiDevice, Void, DeviceInfo>() {
+		@Override
+		protected DeviceInfo doInBackground(UsbMidiDevice... params) {
+			return params[0].retrieveReadableDeviceInfo() ? params[0].getCurrentDeviceInfo() : null;
+		}
+
+		@Override
+		protected void onPostExecute(DeviceInfo result) {
+			if (result != null) {
+				mainText.setText("Retrieved info: " + result + "\n\n" + mainText.getText());
+			} else {
+				mainText.setText("No human readable device info available.\n\n" + mainText.getText());
+			}
+		}
+	};
+
 	private void findUsbMidiDevice() {
 		String s = "USB MIDI devices";
 		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
@@ -141,19 +157,10 @@ public class UsbMidiTest extends Activity {
 		mainText.setText(s);
 		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
 			for (UsbMidiInterface iface : device.getInterfaces()) {
+
 				if (!iface.getInputs().isEmpty()) {
 					midiDevice = device;
-					device.retrieveReadableDeviceInfo(new DeviceInfoCallback() {
-						@Override
-						public void onDeviceInfo(UsbDevice device, DeviceInfo info) {
-							mainText.setText("Retrieved info: " + info + "\n\n" + mainText.getText());
-						}
-						
-						@Override
-						public void onFailure(UsbDevice device) {
-							mainText.setText("No human readable device info available.\n\n" + mainText.getText());
-						}
-					});
+					lookupTask.execute(device);
 					midiDevice.requestPermission(this);
 					return;
 				}

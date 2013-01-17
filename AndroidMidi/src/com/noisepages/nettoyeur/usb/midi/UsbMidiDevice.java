@@ -41,7 +41,6 @@ import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
 import com.noisepages.nettoyeur.usb.DeviceInfo;
-import com.noisepages.nettoyeur.usb.DeviceInfoCallback;
 import com.noisepages.nettoyeur.usb.PermissionHandler;
 
 /**
@@ -396,31 +395,21 @@ public class UsbMidiDevice implements Parcelable {
 	}
 
 	/**
-	 * Attempts to asynchronously replace the default device info with human readable device info from the web.
+	 * Attempts to replace the default device info with human readable device info from the web; must not be
+	 * called on the main thread as it performs an online lookup and may cause the app to become unresponsive.
 	 * 
 	 * Requires android.permission.INTERNET.
 	 * 
-	 * @param callback to be invoked on success; may be null if no notification is desired
+	 * @return true on success
 	 */
-	public void retrieveReadableDeviceInfo(final DeviceInfoCallback callback) {
-		if (hasReadableInfo) return;
-		DeviceInfo.retrieveDeviceInfoAsync(device, new DeviceInfoCallback() {
-			@Override
-			public void onDeviceInfo(UsbDevice device, DeviceInfo info) {
-				UsbMidiDevice.this.info = info;
-				UsbMidiDevice.this.hasReadableInfo = true;
-				if (callback != null) {
-					callback.onDeviceInfo(device, info);
-				}
-			}
-
-			@Override
-			public void onFailure(UsbDevice device) {
-				if (callback != null) {
-					callback.onFailure(device);
-				}
-			}
-		});
+	public boolean retrieveReadableDeviceInfo() {
+		if (hasReadableInfo) return true;
+		DeviceInfo readableInfo = DeviceInfo.retrieveDeviceInfo(device);
+		if (readableInfo != null) {
+			info = readableInfo;
+			hasReadableInfo = true;
+		}
+		return hasReadableInfo;
 	}
 
 	/**
