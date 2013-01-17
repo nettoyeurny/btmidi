@@ -68,6 +68,7 @@ public class UsbMidiDevice implements Parcelable {
 
 	private final UsbDevice device;
 	private volatile DeviceInfo info;
+	private volatile boolean hasReadableInfo = false;
 	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
 	private volatile UsbDeviceConnection connection = null;
 
@@ -402,10 +403,12 @@ public class UsbMidiDevice implements Parcelable {
 	 * @param callback to be invoked on success; may be null if no notification is desired
 	 */
 	public void retrieveReadableDeviceInfo(final DeviceInfoCallback callback) {
+		if (hasReadableInfo) return;
 		DeviceInfo.retrieveDeviceInfoAsync(device, new DeviceInfoCallback() {
 			@Override
 			public void onDeviceInfo(UsbDevice device, DeviceInfo info) {
 				UsbMidiDevice.this.info = info;
+				UsbMidiDevice.this.hasReadableInfo = true;
 				if (callback != null) {
 					callback.onDeviceInfo(device, info);
 				}
@@ -484,6 +487,7 @@ public class UsbMidiDevice implements Parcelable {
 	public void writeToParcel(Parcel dest, int flags) {
 		dest.writeParcelable(device, flags);
 		dest.writeParcelable(info, flags);
+		dest.writeInt(hasReadableInfo ? 1 : 0);  // Looks strange, but there's no Parcel.writeBoolean.
 	}
 	
 	public static final Parcelable.Creator<UsbMidiDevice> CREATOR = new Creator<UsbMidiDevice>() {
@@ -497,8 +501,10 @@ public class UsbMidiDevice implements Parcelable {
 		public UsbMidiDevice createFromParcel(Parcel source) {
 			UsbDevice device = (UsbDevice)source.readParcelable(null);
 			DeviceInfo info = (DeviceInfo)source.readParcelable(null);
+			boolean hasReadableInfo = source.readInt() != 0;
 			UsbMidiDevice midiDevice = new UsbMidiDevice(device);
 			midiDevice.info = info;
+			midiDevice.hasReadableInfo = hasReadableInfo;
 			return midiDevice;
 		}
 	};
