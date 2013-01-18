@@ -16,9 +16,11 @@
 
 package com.noisepages.nettoyeur.usb;
 
+import java.io.IOException;
 import java.util.Scanner;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -45,11 +47,15 @@ public class DeviceInfo {
 	 * @return device info, or null on failure
 	 */
 	public static DeviceInfo retrieveDeviceInfo(UsbDevice device) {
-		return retrieveDeviceInfo(device.getVendorId(), device.getProductId());
-	}
-
-	private static String asFourDigitHex(int id) {
-		return Integer.toHexString(0x10000 | id).substring(1);
+		DeviceInfo info = null;
+		try {
+			info = retrieveDeviceInfo(device.getVendorId(), device.getProductId());
+		} catch (ClientProtocolException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return info;
 	}
 
 	/**
@@ -64,11 +70,6 @@ public class DeviceInfo {
 		this.product = product;
 	}
 
-	@Override
-	public String toString() {
-		return vendor + ":" + product;
-	}
-
 	public String getVendor() {
 		return vendor;
 	}
@@ -77,22 +78,22 @@ public class DeviceInfo {
 		return product;
 	}
 
-	private static DeviceInfo retrieveDeviceInfo(int vendorId, int productId) {
+	private static String asFourDigitHex(int id) {
+		return Integer.toHexString(0x10000 | id).substring(1);
+	}
+
+	private static DeviceInfo retrieveDeviceInfo(int vendorId, int productId) throws ClientProtocolException, IOException {
 		String vendorHex = asFourDigitHex(vendorId);
 		String productHex = asFourDigitHex(productId);
 		String url = "http://usb-ids.gowdy.us/read/UD/" + vendorHex;
 		String vendorName = null;
 		String productName = null;
-		try {
-			vendorName = getName(url);
-			productName = getName(url + "/" + productHex);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		vendorName = getName(url);
+		productName = getName(url + "/" + productHex);
 		return (vendorName != null && productName != null) ? new DeviceInfo(vendorName, productName) : null;
 	}
 
-	private static String getName(String url) throws Exception {
+	private static String getName(String url) throws ClientProtocolException, IOException {
 		HttpClient client = new DefaultHttpClient();
 		HttpGet request = new HttpGet(url);
 		HttpResponse response = client.execute(request);
@@ -108,6 +109,11 @@ public class DeviceInfo {
 		return null;
 	}
 	
+	@Override
+	public String toString() {
+		return vendor + ":" + product;
+	}
+
 	@Override
 	public int hashCode() {
 		return 31 * vendor.hashCode() + product.hashCode();
