@@ -21,11 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
@@ -38,8 +34,7 @@ import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
-import com.noisepages.nettoyeur.usb.DeviceInfo;
-import com.noisepages.nettoyeur.usb.PermissionHandler;
+import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
 
 /**
  * MIDI-specific wrapper for USB devices. Instances of this class will implicitly manage interfaces
@@ -56,16 +51,10 @@ import com.noisepages.nettoyeur.usb.PermissionHandler;
  * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public class UsbMidiDevice {
+public class UsbMidiDevice extends UsbDeviceWithInfo {
 
 	private final static String TAG = "UsbMidiDevice";
-	private static final String ACTION_USB_PERMISSION = "com.noisepages.nettoyeur.usbmidi.USB_PERMISSION";
-
-	private static BroadcastReceiver broadcastReceiver = null;
-
-	private final UsbDevice device;
-	private volatile DeviceInfo info;
-	private volatile boolean hasReadableInfo = false;
+	
 	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
 	private volatile UsbDeviceConnection connection = null;
 
@@ -260,62 +249,6 @@ public class UsbMidiDevice {
 	}
 
 	/**
-	 * Convenience method for handling responses to USB permission requests, to be called in the onCreate method of
-	 * activities that connect to USB MIDI devices. Activities that use call this method also have to uninstall the
-	 * permission handler in their onDestroy method (see uninstallPermissionHandler).
-	 * 
-	 * @param context the current context, e.g., the activity invoking this method
-	 * @param handler
-	 */
-	public static void installPermissionHandler(Context context, final PermissionHandler handler) {
-		uninstallPermissionHandler(context);
-		broadcastReceiver = new BroadcastReceiver() {
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				String action = intent.getAction();
-				if (ACTION_USB_PERMISSION.equals(action)) {
-					synchronized (this) {
-						UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-						if (device != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-							handler.onPermissionGranted(device);
-						} else {
-							handler.onPermissionDenied(device);
-						}
-					}
-				}
-			}
-		};
-		context.registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_PERMISSION));
-	}
-
-	/**
-	 * Uninstalls the permission handler; must be called in the onDestroy method of activities that install
-	 * a permission handler.
-	 * 
-	 * @param context the current context, e.g., the activity invoking this method
-	 */
-	public static void uninstallPermissionHandler(Context context) {
-		if (broadcastReceiver != null) {
-			context.unregisterReceiver(broadcastReceiver);
-			broadcastReceiver = null;
-		}
-	}
-
-	/**
-	 * Convenience method for requesting permission to use the USB device; may only be called if a permission handler
-	 * is installed.
-	 * 
-	 * @param context the current context, e.g., the activity invoking this method
-	 */
-	public void requestPermission(Context context) {
-		if (broadcastReceiver == null) {
-			throw new IllegalStateException("installPermissionHandler must be called before requesting permission");
-		}
-		((UsbManager) context.getSystemService(Context.USB_SERVICE)).requestPermission(device,
-				PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0));
-	}
-
-	/**
 	 * Scans the currently attached USB devices and returns those the look like MIDI devices. Note that there may be
 	 * false positives since this method will list all devices with endpoints that look like MIDI endpoints. While
 	 * this behavior is potentially awkward, it is preferable to the wholesale suppression of devices that are MIDI
@@ -337,8 +270,7 @@ public class UsbMidiDevice {
 	}
 
 	private UsbMidiDevice(UsbDevice device) {
-		this.device = device;
-		info = new DeviceInfo(device);
+		super(device);
 		int ifaceCount = device.getInterfaceCount();
 		for (int i = 0; i < ifaceCount; ++i) {
 			UsbInterface iface = device.getInterface(i);
@@ -376,52 +308,6 @@ public class UsbMidiDevice {
 		interfaces.add(new UsbMidiInterface(iface, midiInputs, midiOutputs));
 	}
 
-	@Override
-	public String toString() {
-		return device.toString();
-	}
-
-	/**
-	 * Note: The return value may change over the lifetime of this object. By default, it is populated
-	 * with numerical information from the underlying UsbDevice object, but if retrieveReadableDeviceInfo
-	 * is invoked, then it may be replaced with human readable data retrieved from the web.
-	 * 
-	 * @return the current device info
-	 */
-	public DeviceInfo getCurrentDeviceInfo() {
-		return info;
-	}
-
-	/**
-	 * Attempts to replace the default device info with human readable device info from the web; must not be
-	 * called on the main thread as it performs an online lookup and may cause the app to become unresponsive.
-	 * 
-	 * Requires android.permission.INTERNET.
-	 * 
-	 * @return true on success
-	 */
-	public boolean retrieveReadableDeviceInfo() {
-		if (hasReadableInfo) return true;
-		DeviceInfo readableInfo = DeviceInfo.retrieveDeviceInfo(device);
-		if (readableInfo != null) {
-			info = readableInfo;
-			hasReadableInfo = true;
-		}
-		return hasReadableInfo;
-	}
-
-	/**
-	 * This method seems to break encapsulation, but it's needed since the handling of permissions
-	 * involves raw UsbDevice instances (see the installPermissionHandler method in this class).
-	 * Besides, raw USB devices are also available from UsbManager.getDeviceList(), and so this
-	 * method doesn't actually expose anything that isn't publicly available to begin with.
-	 * 
-	 * @return the underlying UsbDevice instance
-	 */
-	public UsbDevice getUsbDevice() {
-		return device;
-	}
-
 	/**
 	 * @return an unmodifiable list of MIDI interfaces belonging to this device.
 	 */
@@ -453,15 +339,5 @@ public class UsbMidiDevice {
 		}
 		connection.close();
 		connection = null;
-	}
-
-	@Override
-	public int hashCode() {
-		return device.hashCode();
-	}
-	
-	@Override
-	public boolean equals(Object o) {
-		return (o instanceof UsbMidiDevice) && ((UsbMidiDevice)o).device.equals(device);
 	}
 }

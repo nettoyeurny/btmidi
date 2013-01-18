@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2013 Peter Brinkmann (peter.brinkmann@gmail.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.noisepages.nettoyeur.usb.midi.util;
 
 import java.util.ArrayList;
@@ -13,10 +29,20 @@ import com.noisepages.nettoyeur.midi.R;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
 
+/**
+ * Simple dialog for selecting a MIDI input of a given USB MIDI device.
+ * 
+ * @author Peter Brinkmann (peter.brinkmann@gmail.com)
+ */
 public abstract class UsbMidiInputSelector extends DialogFragment {
 
 	private final UsbMidiDevice device;
 	
+	/**
+	 * Constructor.
+	 * 
+	 * @param device from which to select an input.
+	 */
 	public UsbMidiInputSelector(UsbMidiDevice device) {
 		this.device = device;
 	}
@@ -49,5 +75,13 @@ public abstract class UsbMidiInputSelector extends DialogFragment {
 		    .create();
 	}
 	
+	/**
+	 * Handle selected MIDI inputs in this method. Subclasses may also need to override the onCancel method to
+	 * handle the case of no selected input.
+	 * 
+	 * @param input selection
+	 * @param iface index of the interface that the selected input belongs to
+	 * @param index index of the selected input within its interface
+	 */
 	abstract protected void onInputSelected(UsbMidiInput input, int iface, int index);
 }

@@ -25,10 +25,10 @@ import com.noisepages.nettoyeur.usb.PermissionHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiOutput;
-import com.noisepages.nettoyeur.usb.midi.util.AsyncDeviceInfoLookup;
-import com.noisepages.nettoyeur.usb.midi.util.UsbMidiDeviceSelector;
 import com.noisepages.nettoyeur.usb.midi.util.UsbMidiInputSelector;
 import com.noisepages.nettoyeur.usb.midi.util.UsbMidiOutputSelector;
+import com.noisepages.nettoyeur.usb.util.AsyncDeviceInfoLookup;
+import com.noisepages.nettoyeur.usb.util.UsbDeviceSelector;
 
 public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 
@@ -209,11 +209,11 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 			finish();
 		}
 		
-		new AsyncDeviceInfoLookup() {
+		new AsyncDeviceInfoLookup<UsbMidiDevice>() {
 			
 			@Override
 			protected void onLookupComplete() {
-				new UsbMidiDeviceSelector(devices) {
+				new UsbDeviceSelector<UsbMidiDevice>(devices) {
 					
 					@Override
 					protected void onDeviceSelected(UsbMidiDevice device) {
@@ -228,7 +228,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					}
 				}.show(getFragmentManager(), null);
 			}
-		}.retrieveDeviceInfo(devices);
+		}.retrieveDeviceInfo(devices.toArray(new UsbMidiDevice[devices.size()]));
 	}
 
 	@Override
