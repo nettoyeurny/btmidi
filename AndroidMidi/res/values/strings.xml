@@ -6,5 +6,8 @@
 	<string name="select_device">Select a device to connect to</string>
 	<string name="none_paired">No devices have been paired</string>
 	<string name="title_paired_devices">Paired devices</string>
+	<string name="title_select_usb_midi_device">Select USB MIDI device</string>
+	<string name="title_select_usb_midi_input">Select USB MIDI input</string>
+	<string name="title_select_usb_midi_output">Select USB MIDI output</string>
 	
 </resources>

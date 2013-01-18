@@ -29,7 +29,7 @@ import android.util.Log;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
-import com.noisepages.nettoyeur.bluetooth.R;
+import com.noisepages.nettoyeur.midi.R;
 import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;

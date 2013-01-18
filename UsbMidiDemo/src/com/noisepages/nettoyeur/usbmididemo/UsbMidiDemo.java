@@ -12,6 +12,7 @@ package com.noisepages.nettoyeur.usbmididemo;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.hardware.usb.UsbDevice;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -23,8 +24,11 @@ import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.usb.PermissionHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
-import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInterface;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiOutput;
+import com.noisepages.nettoyeur.usb.midi.util.AsyncDeviceInfoLookup;
+import com.noisepages.nettoyeur.usb.midi.util.UsbMidiDeviceSelector;
+import com.noisepages.nettoyeur.usb.midi.util.UsbMidiInputSelector;
+import com.noisepages.nettoyeur.usb.midi.util.UsbMidiOutputSelector;
 
 public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 
@@ -161,35 +165,70 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 			@Override
 			public void onPermissionGranted(UsbDevice device) {
 				midiDevice.open(UsbMidiDemo.this);
-				List<UsbMidiInput> inputs = midiDevice.getInterfaces().get(0).getInputs();
-				if (!inputs.isEmpty()) {
-					UsbMidiInput input = inputs.get(0);
-					input.setReceiver(receiver);
-					input.start();
-				}
-				List<UsbMidiOutput> outputs = midiDevice.getInterfaces().get(0).getOutputs();
-				if (!outputs.isEmpty()) {
-					midiOut = outputs.get(0).getMidiOut();
-				}
+				final UsbMidiOutputSelector outputSelector = new UsbMidiOutputSelector(midiDevice) {
+
+					@Override
+					protected void onOutputSelected(UsbMidiOutput output, int iface, int index) {
+						toast("Output selection: Interface " + iface + ", Output " + index);
+						midiOut = output.getMidiOut();
+					}
+					
+					@Override
+					public void onCancel(DialogInterface dialog) {
+						toast("No output selected.");
+					}
+				};
+				new UsbMidiInputSelector(midiDevice) {
+					
+					@Override
+					protected void onInputSelected(UsbMidiInput input, int iface, int index) {
+						toast("Input selection: Interface " + iface + ", Input " + index);
+						input.setReceiver(receiver);
+						input.start();
+						outputSelector.show(getFragmentManager(), null);
+					}
+					
+					@Override
+					public void onCancel(DialogInterface dialog) {
+						toast("No input selected.");
+						outputSelector.show(getFragmentManager(), null);
+					}
+				}.show(getFragmentManager(), null);
 			}
 
 			@Override
 			public void onPermissionDenied(UsbDevice device) {
-				toast(TAG + ": permission denied for device " + midiDevice);
+				toast("Permission denied for device " + midiDevice);
+				finish();
 			}
 		});
 		
-		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
-			for (UsbMidiInterface iface : device.getInterfaces()) {
-				if (!iface.getInputs().isEmpty()) {
-					midiDevice = device;
-					toast("USB MIDI devices\n\n" + device.toString());
-					midiDevice.requestPermission(this);
-					return;
-				}
-			}
+		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
+		if (devices.isEmpty()) {
+			toast("No USB MIDI devices found.");
+			finish();
 		}
-		toast("No USB MIDI devices found");
+		
+		new AsyncDeviceInfoLookup() {
+			
+			@Override
+			protected void onLookupComplete() {
+				new UsbMidiDeviceSelector(devices) {
+					
+					@Override
+					protected void onDeviceSelected(UsbMidiDevice device) {
+						midiDevice = device;
+						midiDevice.requestPermission(UsbMidiDemo.this);
+					}
+					
+					@Override
+					public void onCancel(android.content.DialogInterface dialog) {
+						toast("No device selected.");
+						finish();
+					}
+				}.show(getFragmentManager(), null);
+			}
+		}.retrieveDeviceInfo(devices);
 	}
 
 	@Override

@@ -32,8 +32,6 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.util.Log;
 
 import com.noisepages.nettoyeur.midi.FromWireConverter;
@@ -58,7 +56,7 @@ import com.noisepages.nettoyeur.usb.PermissionHandler;
  * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public class UsbMidiDevice implements Parcelable {
+public class UsbMidiDevice {
 
 	private final static String TAG = "UsbMidiDevice";
 	private static final String ACTION_USB_PERMISSION = "com.noisepages.nettoyeur.usbmidi.USB_PERMISSION";
@@ -466,35 +464,4 @@ public class UsbMidiDevice implements Parcelable {
 	public boolean equals(Object o) {
 		return (o instanceof UsbMidiDevice) && ((UsbMidiDevice)o).device.equals(device);
 	}
-	
-	@Override
-	public int describeContents() {
-		return 0;
-	}
-
-	@Override
-	public void writeToParcel(Parcel dest, int flags) {
-		dest.writeParcelable(device, flags);
-		dest.writeParcelable(info, flags);
-		dest.writeInt(hasReadableInfo ? 1 : 0);  // Looks strange, but there's no Parcel.writeBoolean.
-	}
-	
-	public static final Parcelable.Creator<UsbMidiDevice> CREATOR = new Creator<UsbMidiDevice>() {
-		
-		@Override
-		public UsbMidiDevice[] newArray(int size) {
-			return new UsbMidiDevice[size];
-		}
-		
-		@Override
-		public UsbMidiDevice createFromParcel(Parcel source) {
-			UsbDevice device = (UsbDevice)source.readParcelable(null);
-			DeviceInfo info = (DeviceInfo)source.readParcelable(null);
-			boolean hasReadableInfo = source.readInt() != 0;
-			UsbMidiDevice midiDevice = new UsbMidiDevice(device);
-			midiDevice.info = info;
-			midiDevice.hasReadableInfo = hasReadableInfo;
-			return midiDevice;
-		}
-	};
 }

@@ -24,15 +24,13 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.hardware.usb.UsbDevice;
-import android.os.Parcel;
-import android.os.Parcelable;
 
 /**
  * Support for retrieving human-readable names of USB devices from the web (http://usb-ids.gowdy.us/index.html).
  * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public class DeviceInfo implements Parcelable {
+public class DeviceInfo {
 
 	private final String vendor;
 	private final String product;
@@ -119,30 +117,4 @@ public class DeviceInfo implements Parcelable {
 	public boolean equals(Object o) {
 		return (o instanceof DeviceInfo) && ((DeviceInfo)o).vendor.equals(vendor) && ((DeviceInfo)o).product.equals(product);
 	}
-	
-	@Override
-	public int describeContents() {
-		return 0;
-	}
-
-	@Override
-	public void writeToParcel(Parcel dest, int flags) {
-		dest.writeString(vendor);
-		dest.writeString(product);
-	}
-	
-	public static final Parcelable.Creator<DeviceInfo> CREATOR = new Creator<DeviceInfo>() {
-		
-		@Override
-		public DeviceInfo[] newArray(int size) {
-			return new DeviceInfo[size];
-		}
-		
-		@Override
-		public DeviceInfo createFromParcel(Parcel source) {
-			String vendor = source.readString();
-			String product = source.readString();
-			return new DeviceInfo(vendor, product);
-		}
-	};
 }

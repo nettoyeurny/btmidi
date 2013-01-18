@@ -23,6 +23,8 @@ package com.noisepages.nettoyeur.bluetooth;
 
 import java.util.Set;
 
+import com.noisepages.nettoyeur.midi.R;
+
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
