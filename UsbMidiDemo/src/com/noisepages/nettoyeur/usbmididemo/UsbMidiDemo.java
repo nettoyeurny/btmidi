@@ -204,11 +204,6 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 		});
 		
 		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
-		if (devices.isEmpty()) {
-			toast("No USB MIDI devices found.");
-			finish();
-		}
-		
 		new AsyncDeviceInfoLookup<UsbMidiDevice>() {
 			
 			@Override
@@ -222,7 +217,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					}
 					
 					@Override
-					public void onCancel(android.content.DialogInterface dialog) {
+					protected void onNoSelection() {
 						toast("No device selected.");
 						finish();
 					}

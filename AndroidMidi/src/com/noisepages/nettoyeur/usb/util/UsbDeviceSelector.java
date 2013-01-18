@@ -38,6 +38,17 @@ public abstract class UsbDeviceSelector<T extends UsbDeviceWithInfo> extends Dia
 	
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
+		if (devices.isEmpty()) {
+			return new Builder(getActivity())
+			    .setTitle(R.string.title_no_usb_devices_available)
+			    .setPositiveButton(android.R.string.ok, new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						onNoSelection();
+					}
+				})
+				.create();
+		}
 		String items[] = new String[devices.size()];
 		for (int i = 0; i < devices.size(); ++i) {
 			items[i] = devices.get(i).getCurrentDeviceInfo().toString();
@@ -54,5 +65,11 @@ public abstract class UsbDeviceSelector<T extends UsbDeviceWithInfo> extends Dia
 			.create();
 	}
 	
-	abstract protected void onDeviceSelected(T device);
+	@Override
+	public void onCancel(android.content.DialogInterface dialog) {
+		onNoSelection();
+	}
+
+	protected abstract void onDeviceSelected(T device);
+	protected abstract void onNoSelection();
 }

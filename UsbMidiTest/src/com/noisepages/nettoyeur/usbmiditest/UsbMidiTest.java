@@ -134,24 +134,25 @@ public class UsbMidiTest extends Activity {
 
 	private void chooseUsbMidiDevice() {
 		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
-		if (!devices.isEmpty()) {
-			new AsyncDeviceInfoLookup<UsbDeviceWithInfo>() {
+		new AsyncDeviceInfoLookup<UsbDeviceWithInfo>() {
 
-				@Override
-				protected void onLookupComplete() {
-					new UsbDeviceSelector<UsbMidiDevice>(devices) {
+			@Override
+			protected void onLookupComplete() {
+				new UsbDeviceSelector<UsbMidiDevice>(devices) {
 
-						@Override
-						protected void onDeviceSelected(UsbMidiDevice device) {
-							midiDevice = device;
-							mainText.setText("Selected device: " + device.getCurrentDeviceInfo());
-							midiDevice.requestPermission(UsbMidiTest.this);
-						}
-					}.show(getFragmentManager(), null);
-				}
-			}.execute(devices.toArray(new UsbMidiDevice[devices.size()]));
-		} else {
-			mainText.setText("No USB MIDI devices found.");
-		}
+					@Override
+					protected void onDeviceSelected(UsbMidiDevice device) {
+						midiDevice = device;
+						mainText.setText("Selected device: " + device.getCurrentDeviceInfo());
+						midiDevice.requestPermission(UsbMidiTest.this);
+					}
+
+					@Override
+					protected void onNoSelection() {
+						mainText.setText("No USB MIDI device selected.");
+					}
+				}.show(getFragmentManager(), null);
+			}
+		}.execute(devices.toArray(new UsbMidiDevice[devices.size()]));
 	}
 }
