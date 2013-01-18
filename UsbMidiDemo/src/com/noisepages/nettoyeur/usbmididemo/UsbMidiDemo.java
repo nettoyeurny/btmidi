@@ -12,7 +12,6 @@ package com.noisepages.nettoyeur.usbmididemo;
 import java.util.List;
 
 import android.app.Activity;
-import android.content.DialogInterface;
 import android.hardware.usb.UsbDevice;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -174,7 +173,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					}
 					
 					@Override
-					public void onCancel(DialogInterface dialog) {
+					protected void onNoSelection() {
 						toast("No output selected.");
 					}
 				};
@@ -189,7 +188,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					}
 					
 					@Override
-					public void onCancel(DialogInterface dialog) {
+					protected void onNoSelection() {
 						toast("No input selected.");
 						outputSelector.show(getFragmentManager(), null);
 					}

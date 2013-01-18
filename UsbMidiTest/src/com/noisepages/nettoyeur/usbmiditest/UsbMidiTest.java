@@ -112,6 +112,11 @@ public class UsbMidiTest extends Activity {
 						input.start();
 
 					}
+
+					@Override
+					protected void onNoSelection() {
+						mainText.setText(mainText.getText() + "\n\nNo inputs available.");
+					}
 				}.show(getFragmentManager(), null);
 			}
 

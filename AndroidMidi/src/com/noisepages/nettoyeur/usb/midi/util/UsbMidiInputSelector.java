@@ -55,6 +55,17 @@ public abstract class UsbMidiInputSelector extends DialogFragment {
 				items.add("Interface " + i + ", Input " + j);
 			}
 		}
+		if (items.isEmpty()) {
+			return new AlertDialog.Builder(getActivity())
+			    .setTitle(R.string.title_no_usb_midi_input_available)
+			    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						onNoSelection();
+					}
+				})
+				.create();
+		}
 		return new AlertDialog.Builder(getActivity())
 		    .setTitle(R.string.title_select_usb_midi_input)
 		    .setItems(items.toArray(new String[items.size()]), new DialogInterface.OnClickListener() {
@@ -75,13 +86,23 @@ public abstract class UsbMidiInputSelector extends DialogFragment {
 		    .create();
 	}
 	
+	
+	@Override
+	public void onCancel(android.content.DialogInterface dialog) {
+		onNoSelection();
+	}
+	
 	/**
-	 * Handle selected MIDI inputs in this method. Subclasses may also need to override the onCancel method to
-	 * handle the case of no selected input.
+	 * Handle selected MIDI inputs in this method.
 	 * 
 	 * @param input selection
 	 * @param iface index of the interface that the selected input belongs to
 	 * @param index index of the selected input within its interface
 	 */
-	abstract protected void onInputSelected(UsbMidiInput input, int iface, int index);
+	protected abstract void onInputSelected(UsbMidiInput input, int iface, int index);
+	
+	/**
+	 * Handle cancellation as well as devices without inputs.
+	 */
+	protected abstract void onNoSelection();
 }

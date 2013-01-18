@@ -70,6 +70,15 @@ public abstract class UsbDeviceSelector<T extends UsbDeviceWithInfo> extends Dia
 		onNoSelection();
 	}
 
+	/**
+	 * Handle the selected device in this method.
+	 * 
+	 * @param device selection
+	 */
 	protected abstract void onDeviceSelected(T device);
+	
+	/**
+	 * Handle cancellation as well as empty device lists.
+	 */
 	protected abstract void onNoSelection();
 }

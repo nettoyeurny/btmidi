@@ -10,5 +10,7 @@
 	<string name="title_select_usb_midi_input">Select USB MIDI input</string>
 	<string name="title_select_usb_midi_output">Select USB MIDI output</string>
 	<string name="title_no_usb_devices_available">No USB devices available</string>
+	<string name="title_no_usb_midi_input_available">No USB MIDI input available</string>
+	<string name="title_no_usb_midi_output_available">No USB MIDI output available</string>
 	
 </resources>
