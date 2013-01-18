@@ -20,23 +20,21 @@ import java.util.List;
 
 import android.app.Activity;
 import android.hardware.usb.UsbDevice;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
-import com.noisepages.nettoyeur.usb.DeviceInfo;
 import com.noisepages.nettoyeur.usb.PermissionHandler;
+import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
-import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInterface;
+import com.noisepages.nettoyeur.usb.midi.util.UsbMidiInputSelector;
+import com.noisepages.nettoyeur.usb.util.AsyncDeviceInfoLookup;
+import com.noisepages.nettoyeur.usb.util.UsbDeviceSelector;
 
 public class UsbMidiTest extends Activity {
-
-	private static final String TAG = "UsbMidiTest";
 
 	private TextView mainText;
 	private UsbMidiDevice midiDevice = null;
@@ -105,20 +103,24 @@ public class UsbMidiTest extends Activity {
 			@Override
 			public void onPermissionGranted(UsbDevice device) {
 				midiDevice.open(UsbMidiTest.this);
-				List<UsbMidiInput> inputs = midiDevice.getInterfaces().get(0).getInputs();
-				if (!inputs.isEmpty()) {
-					UsbMidiInput input = inputs.get(0);
-					input.setReceiver(midiReceiver);
-					input.start();
-				}
+				new UsbMidiInputSelector(midiDevice) {
+
+					@Override
+					protected void onInputSelected(UsbMidiInput input, int iface, int index) {
+						mainText.setText(mainText.getText() + "\n\nInput: Interface " + iface + ", Index " + index);
+						input.setReceiver(midiReceiver);
+						input.start();
+
+					}
+				}.show(getFragmentManager(), null);
 			}
 
 			@Override
 			public void onPermissionDenied(UsbDevice device) {
-				Log.d(TAG, "permission denied for device " + midiDevice);
+				mainText.setText("Permission denied for device " + midiDevice.getCurrentDeviceInfo() + ".");
 			}
 		});
-		findUsbMidiDevice();
+		chooseUsbMidiDevice();
 	}
 
 	@Override
@@ -130,42 +132,26 @@ public class UsbMidiTest extends Activity {
 		UsbMidiDevice.uninstallPermissionHandler(this);
 	}
 
-	private final AsyncTask<UsbMidiDevice, Void, DeviceInfo> lookupTask = new AsyncTask<UsbMidiDevice, Void, DeviceInfo>() {
-		@Override
-		protected DeviceInfo doInBackground(UsbMidiDevice... params) {
-			return params[0].retrieveReadableDeviceInfo() ? params[0].getCurrentDeviceInfo() : null;
-		}
+	private void chooseUsbMidiDevice() {
+		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
+		if (!devices.isEmpty()) {
+			new AsyncDeviceInfoLookup<UsbDeviceWithInfo>() {
 
-		@Override
-		protected void onPostExecute(DeviceInfo result) {
-			if (result != null) {
-				mainText.setText("Retrieved info: " + result + "\n\n" + mainText.getText());
-			} else {
-				mainText.setText("No human readable device info available.\n\n" + mainText.getText());
-			}
-		}
-	};
+				@Override
+				protected void onLookupComplete() {
+					new UsbDeviceSelector<UsbMidiDevice>(devices) {
 
-	private void findUsbMidiDevice() {
-		String s = "USB MIDI devices";
-		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
-			s += "\n\n" + device;
-			for (UsbMidiInterface iface : device.getInterfaces()) {
-				s += "\n\n" + iface + "\n\n" + iface.getInputs() + "\n\n" + iface.getOutputs();
-			}
-		}
-		mainText.setText(s);
-		for (UsbMidiDevice device : UsbMidiDevice.getMidiDevices(this)) {
-			for (UsbMidiInterface iface : device.getInterfaces()) {
-
-				if (!iface.getInputs().isEmpty()) {
-					midiDevice = device;
-					lookupTask.execute(device);
-					midiDevice.requestPermission(this);
-					return;
+						@Override
+						protected void onDeviceSelected(UsbMidiDevice device) {
+							midiDevice = device;
+							mainText.setText("Selected device: " + device.getCurrentDeviceInfo());
+							midiDevice.requestPermission(UsbMidiTest.this);
+						}
+					}.show(getFragmentManager(), null);
 				}
-			}
+			}.execute(devices.toArray(new UsbMidiDevice[devices.size()]));
+		} else {
+			mainText.setText("No USB MIDI devices found.");
 		}
-		mainText.setText("No USB MIDI devices found");
 	}
 }
