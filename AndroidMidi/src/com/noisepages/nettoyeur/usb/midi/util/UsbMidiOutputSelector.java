@@ -37,7 +37,7 @@ import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiOutput;
 public abstract class UsbMidiOutputSelector extends DialogFragment {
 
 	private final UsbMidiDevice device;
-	
+
 	/**
 	 * Constructor.
 	 * 
@@ -46,7 +46,7 @@ public abstract class UsbMidiOutputSelector extends DialogFragment {
 	public UsbMidiOutputSelector(UsbMidiDevice device) {
 		this.device = device;
 	}
-	
+
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
 		List<String> items = new ArrayList<String>();
@@ -55,21 +55,10 @@ public abstract class UsbMidiOutputSelector extends DialogFragment {
 				items.add("Interface " + i + ", Output " + j);
 			}
 		}
-		if (items.isEmpty()) {
-			return new AlertDialog.Builder(getActivity())
-			    .setTitle(R.string.title_no_usb_midi_output_available)
-			    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						onNoSelection();
-					}
-				})
-				.create();
-		}
-		return new AlertDialog.Builder(getActivity())
-		    .setTitle(R.string.title_select_usb_midi_output)
-		    .setItems(items.toArray(new String[items.size()]), new DialogInterface.OnClickListener() {
-				
+		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity()).setCancelable(true);
+		if (!items.isEmpty()) {
+			builder.setTitle(R.string.title_select_usb_midi_output).setItems(items.toArray(new String[items.size()]), new DialogInterface.OnClickListener() {
+
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					int iface = 0;
@@ -81,12 +70,20 @@ public abstract class UsbMidiOutputSelector extends DialogFragment {
 					onOutputSelected(device.getInterfaces().get(iface).getOutputs().get(index), iface, index);
 				}
 
-			})
-			.setCancelable(true)
-		    .create();
+			});
+		} else {
+			builder.setTitle(R.string.title_no_usb_midi_output_available).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					onNoSelection();
+				}
+			});
+		}
+		return builder.create();
 	}
-	
-	
+
+
 	@Override
 	public void onCancel(android.content.DialogInterface dialog) {
 		onNoSelection();
@@ -100,7 +97,7 @@ public abstract class UsbMidiOutputSelector extends DialogFragment {
 	 * @param index index of the selected output within its interface
 	 */
 	protected abstract void onOutputSelected(UsbMidiOutput output, int iface, int index);
-	
+
 	/**
 	 * Handle cancellation as well as devices without outputs.
 	 */

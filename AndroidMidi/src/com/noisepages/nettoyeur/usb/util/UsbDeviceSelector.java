@@ -31,40 +31,36 @@ import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
 public abstract class UsbDeviceSelector<T extends UsbDeviceWithInfo> extends DialogFragment {
 
 	private final List<T> devices;
-	
+
 	public UsbDeviceSelector(List<T> devices) {
 		this.devices = devices;
 	}
-	
+
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		if (devices.isEmpty()) {
-			return new Builder(getActivity())
-			    .setTitle(R.string.title_no_usb_devices_available)
-			    .setPositiveButton(android.R.string.ok, new OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						onNoSelection();
-					}
-				})
-				.create();
-		}
-		String items[] = new String[devices.size()];
-		for (int i = 0; i < devices.size(); ++i) {
-			items[i] = devices.get(i).getCurrentDeviceInfo().toString();
-		}
-		return new Builder(getActivity())
-			.setTitle(R.string.title_select_usb_midi_device)
-			.setItems(items, new OnClickListener() {
+		Builder builder = new Builder(getActivity()).setCancelable(true);
+		if (!devices.isEmpty()) {
+			String items[] = new String[devices.size()];
+			for (int i = 0; i < devices.size(); ++i) {
+				items[i] = devices.get(i).getCurrentDeviceInfo().toString();
+			}
+			builder.setTitle(R.string.title_select_usb_midi_device).setItems(items, new OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					onDeviceSelected(devices.get(which));
 				}
-			})
-			.setCancelable(true)
-			.create();
+			});
+		} else {
+			builder.setTitle(R.string.title_no_usb_devices_available).setPositiveButton(android.R.string.ok, new OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					onNoSelection();
+				}
+			});
+		}
+		return builder.create();
 	}
-	
+
 	@Override
 	public void onCancel(android.content.DialogInterface dialog) {
 		onNoSelection();
@@ -76,7 +72,7 @@ public abstract class UsbDeviceSelector<T extends UsbDeviceWithInfo> extends Dia
 	 * @param device selection
 	 */
 	protected abstract void onDeviceSelected(T device);
-	
+
 	/**
 	 * Handle cancellation as well as empty device lists.
 	 */
