@@ -36,7 +36,7 @@ public class UsbDeviceWithInfo {
 
 	private static BroadcastReceiver broadcastReceiver = null;
 
-	private final UsbDevice device;
+	protected final UsbDevice device;
 	private volatile DeviceInfo info;
 	private volatile boolean hasReadableInfo = false;
 	
@@ -48,25 +48,27 @@ public class UsbDeviceWithInfo {
 	 * @param context the current context, e.g., the activity invoking this method
 	 * @param handler
 	 */
-	public static void installPermissionHandler(Context context, final PermissionHandler handler) {
+	public static void installBroadcastHandler(Context context, final UsbBroadcastHandler handler) {
 		uninstallPermissionHandler(context);
 		broadcastReceiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				String action = intent.getAction();
+				UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+				if (device == null) return;
 				if (ACTION_USB_PERMISSION.equals(action)) {
-					synchronized (this) {
-						UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-						if (device != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-							handler.onPermissionGranted(device);
-						} else {
-							handler.onPermissionDenied(device);
-						}
+					if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+						handler.onPermissionGranted(device);
+					} else {
+						handler.onPermissionDenied(device);
 					}
+				} else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+					handler.onDeviceDetached(device);
 				}
 			}
 		};
 		context.registerReceiver(broadcastReceiver, new IntentFilter(ACTION_USB_PERMISSION));
+		context.registerReceiver(broadcastReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
 	}
 
 	/**
@@ -95,23 +97,28 @@ public class UsbDeviceWithInfo {
 		((UsbManager) context.getSystemService(Context.USB_SERVICE)).requestPermission(device,
 				PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0));
 	}
+	
+	/**
+	 * Constructor.
+	 * 
+	 * @param device to be wrapped
+	 */
 	public UsbDeviceWithInfo(UsbDevice device) {
 		this.device = device;
 		info = new DeviceInfo(device);
 	}
 
 	/**
-	 * This method seems to break encapsulation, but it's needed since the handling of permissions
-	 * involves raw UsbDevice instances (see the installPermissionHandler method in this class).
-	 * Besides, raw USB devices are also available from UsbManager.getDeviceList(), and so this
-	 * method doesn't actually expose anything that isn't publicly available to begin with.
+	 * Checks whether a given USB device equals the device wrapped by this instance; useful for checking whether
+	 * {@link UsbBroadcastHandler} callbacks are for a particular instance of UsbDeviceWithInfo.
 	 * 
-	 * @return the underlying UsbDevice instance
+	 * @param otherDevice to compare this device to
+	 * @return true if otherDevice equals the USB device wrapped by this instance
 	 */
-	public UsbDevice getUsbDevice() {
-		return device;
+	public boolean matches(UsbDevice otherDevice) {
+		return this.device.equals(otherDevice);
 	}
-
+	
 	/**
 	 * Note: The return value may change over the lifetime of this object. By default, it is populated
 	 * with numerical information from the underlying UsbDevice object, but if retrieveReadableDeviceInfo
@@ -144,15 +151,5 @@ public class UsbDeviceWithInfo {
 	@Override
 	public String toString() {
 		return device.toString();
-	}
-
-	@Override
-	public int hashCode() {
-		return device.hashCode();
-	}
-	
-	@Override
-	public boolean equals(Object o) {
-		return (o instanceof UsbDeviceWithInfo) && ((UsbDeviceWithInfo)o).device.equals(device);
 	}
 }

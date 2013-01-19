@@ -23,7 +23,7 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
-import com.noisepages.nettoyeur.usb.PermissionHandler;
+import com.noisepages.nettoyeur.usb.UsbBroadcastHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiOutput;
@@ -167,10 +167,11 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 			key.setOnTouchListener(this);
 		}
 		
-		UsbMidiDevice.installPermissionHandler(this, new PermissionHandler() {
+		UsbMidiDevice.installBroadcastHandler(this, new UsbBroadcastHandler() {
 
 			@Override
 			public void onPermissionGranted(UsbDevice device) {
+				if (midiDevice == null || !midiDevice.matches(device)) return;
 				midiDevice.open(UsbMidiDemo.this);
 				final UsbMidiOutputSelector outputSelector = new UsbMidiOutputSelector(midiDevice) {
 
@@ -182,7 +183,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					
 					@Override
 					protected void onNoSelection() {
-						toast("No output selected.");
+						toast("No output selected");
 					}
 				};
 				new UsbMidiInputSelector(midiDevice) {
@@ -197,7 +198,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					
 					@Override
 					protected void onNoSelection() {
-						toast("No input selected.");
+						toast("No input selected");
 						outputSelector.show(getFragmentManager(), null);
 					}
 				}.show(getFragmentManager(), null);
@@ -205,8 +206,17 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 
 			@Override
 			public void onPermissionDenied(UsbDevice device) {
+				if (midiDevice == null || !midiDevice.matches(device)) return;
 				toast("Permission denied for device " + midiDevice.getCurrentDeviceInfo());
 				midiDevice = null;
+			}
+
+			@Override
+			public void onDeviceDetached(UsbDevice device) {
+				if (midiDevice == null || !midiDevice.matches(device)) return;
+				midiDevice.close();
+				midiDevice = null;
+				toast("MIDI device disconnected");
 			}
 		});
 	}

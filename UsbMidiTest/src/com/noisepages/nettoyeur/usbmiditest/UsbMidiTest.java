@@ -18,7 +18,7 @@ import android.view.MenuItem;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
-import com.noisepages.nettoyeur.usb.PermissionHandler;
+import com.noisepages.nettoyeur.usb.UsbBroadcastHandler;
 import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
@@ -90,10 +90,11 @@ public class UsbMidiTest extends Activity {
 		setContentView(R.layout.activity_main);
 		mainText = (TextView) findViewById(R.id.mainText);
 		mainText.setMovementMethod(new ScrollingMovementMethod());
-		UsbMidiDevice.installPermissionHandler(this, new PermissionHandler() {
-
+		UsbMidiDevice.installBroadcastHandler(this, new UsbBroadcastHandler() {
+			
 			@Override
 			public void onPermissionGranted(UsbDevice device) {
+				if (midiDevice == null || !midiDevice.matches(device)) return;
 				midiDevice.open(UsbMidiTest.this);
 				new UsbMidiInputSelector(midiDevice) {
 
@@ -114,8 +115,17 @@ public class UsbMidiTest extends Activity {
 
 			@Override
 			public void onPermissionDenied(UsbDevice device) {
+				if (midiDevice == null || !midiDevice.matches(device)) return;
 				mainText.setText("Permission denied for device " + midiDevice.getCurrentDeviceInfo() + ".");
 				midiDevice = null;
+			}
+
+			@Override
+			public void onDeviceDetached(UsbDevice device) {
+				if (midiDevice == null || !midiDevice.matches(device)) return;
+				midiDevice.close();
+				midiDevice = null;
+				mainText.setText("USB MIDI device detached.");
 			}
 		});
 	}

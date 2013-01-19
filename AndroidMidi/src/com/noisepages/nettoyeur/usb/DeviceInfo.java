@@ -103,7 +103,9 @@ public class DeviceInfo {
 			int start = line.indexOf("Name:") + 6;
 			if (start > 5) {
 				int end = line.indexOf("<", start);
-				return line.substring(start, end);
+				if (end > start) {
+					return line.substring(start, end);
+				}
 			}
 		}
 		return null;
