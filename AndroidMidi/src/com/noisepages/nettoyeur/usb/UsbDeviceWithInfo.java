@@ -36,9 +36,9 @@ public class UsbDeviceWithInfo {
 
 	private static BroadcastReceiver broadcastReceiver = null;
 
-	protected final UsbDevice device;
-	protected volatile DeviceInfo info;
-	protected volatile boolean hasReadableInfo = false;
+	private final UsbDevice device;
+	private volatile DeviceInfo info;
+	private volatile boolean hasReadableInfo = false;
 	
 	/**
 	 * Convenience method for handling responses to USB permission requests, to be called in the onCreate method of

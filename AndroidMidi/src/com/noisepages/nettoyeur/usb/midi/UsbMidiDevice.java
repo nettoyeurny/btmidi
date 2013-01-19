@@ -322,7 +322,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 	 */
 	public void open(Context context) {
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
-		connection = manager.openDevice(device);
+		connection = manager.openDevice(getUsbDevice());
 		for (UsbMidiInterface iface : interfaces) {
 			connection.claimInterface(iface.getInterface(), true);
 		}
