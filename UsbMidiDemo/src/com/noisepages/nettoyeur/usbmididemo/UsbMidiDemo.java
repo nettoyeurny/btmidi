@@ -14,6 +14,9 @@ import java.util.List;
 import android.app.Activity;
 import android.hardware.usb.UsbDevice;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
@@ -29,6 +32,11 @@ import com.noisepages.nettoyeur.usb.midi.util.UsbMidiOutputSelector;
 import com.noisepages.nettoyeur.usb.util.AsyncDeviceInfoLookup;
 import com.noisepages.nettoyeur.usb.util.UsbDeviceSelector;
 
+/**
+ * USB MIDI Demo app. The on-screen keyboard sends and receives MIDI note values between 60 and 72.
+ * 
+ * @author Peter Brinkmann (peter.brinkmann@gmail.com)
+ */
 public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 
 	private static final String TAG = "UsbMidiDemo";
@@ -197,32 +205,10 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 
 			@Override
 			public void onPermissionDenied(UsbDevice device) {
-				toast("Permission denied for device " + midiDevice);
-				finish();
+				toast("Permission denied for device " + midiDevice.getCurrentDeviceInfo());
+				midiDevice = null;
 			}
 		});
-		
-		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
-		new AsyncDeviceInfoLookup<UsbMidiDevice>() {
-			
-			@Override
-			protected void onLookupComplete() {
-				new UsbDeviceSelector<UsbMidiDevice>(devices) {
-					
-					@Override
-					protected void onDeviceSelected(UsbMidiDevice device) {
-						midiDevice = device;
-						midiDevice.requestPermission(UsbMidiDemo.this);
-					}
-					
-					@Override
-					protected void onNoSelection() {
-						toast("No device selected.");
-						finish();
-					}
-				}.show(getFragmentManager(), null);
-			}
-		}.retrieveDeviceInfo(devices.toArray(new UsbMidiDevice[devices.size()]));
 	}
 
 	@Override
@@ -260,5 +246,52 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 
 	private void keyUp(int n) {
 		keys[n].setImageResource(imageUp[n]);
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.menu, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.connect_item:
+			if (midiDevice == null) {
+				chooseMidiDevice();
+			} else {
+				midiDevice.close();
+				midiDevice = null;
+				toast("USB MIDI connection closed");
+			}
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}
+
+	private void chooseMidiDevice() {
+		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
+		new AsyncDeviceInfoLookup<UsbMidiDevice>() {
+			
+			@Override
+			protected void onLookupComplete() {
+				new UsbDeviceSelector<UsbMidiDevice>(devices) {
+					
+					@Override
+					protected void onDeviceSelected(UsbMidiDevice device) {
+						midiDevice = device;
+						midiDevice.requestPermission(UsbMidiDemo.this);
+					}
+					
+					@Override
+					protected void onNoSelection() {
+						toast("No device selected");
+					}
+				}.show(getFragmentManager(), null);
+			}
+		}.retrieveDeviceInfo(devices.toArray(new UsbMidiDevice[devices.size()]));
 	}
 }

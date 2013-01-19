@@ -1,17 +1,6 @@
-/*
- * Copyright (C) 2012 Peter Brinkmann (peter.brinkmann@gmail.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/**
+ * For information on usage and redistribution, and for a DISCLAIMER OF ALL
+ * WARRANTIES, see the file, "LICENSE.txt," in this distribution.
  */
 
 package com.noisepages.nettoyeur.usbmiditest;
@@ -23,6 +12,9 @@ import android.hardware.usb.UsbDevice;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.method.ScrollingMovementMethod;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
@@ -123,9 +115,9 @@ public class UsbMidiTest extends Activity {
 			@Override
 			public void onPermissionDenied(UsbDevice device) {
 				mainText.setText("Permission denied for device " + midiDevice.getCurrentDeviceInfo() + ".");
+				midiDevice = null;
 			}
 		});
-		chooseUsbMidiDevice();
 	}
 
 	@Override
@@ -137,7 +129,31 @@ public class UsbMidiTest extends Activity {
 		UsbMidiDevice.uninstallPermissionHandler(this);
 	}
 
-	private void chooseUsbMidiDevice() {
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.menu, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.connect_item:
+			if (midiDevice == null) {
+				chooseMidiDevice();
+			} else {
+				midiDevice.close();
+				midiDevice = null;
+				mainText.setText("USB MIDI connection closed.");
+			}
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+	}
+
+	private void chooseMidiDevice() {
 		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
 		new AsyncDeviceInfoLookup<UsbDeviceWithInfo>() {
 

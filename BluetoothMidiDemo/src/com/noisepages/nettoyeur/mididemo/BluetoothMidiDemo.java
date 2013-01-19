@@ -32,6 +32,11 @@ import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 
+/**
+ * Bluetooth MIDI Demo app. The on-screen keyboard sends and receives MIDI note values between 60 and 72.
+ * 
+ * @author Peter Brinkmann (peter.brinkmann@gmail.com)
+ */
 public class BluetoothMidiDemo extends Activity implements View.OnTouchListener {
 
 	private static final String TAG = "BluetoothMidiDemo";

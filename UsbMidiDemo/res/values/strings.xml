@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">UsbMidiDemo</string>
+    <string name="connect_text">Connect/disconnect USB MIDI device</string>
 </resources>
