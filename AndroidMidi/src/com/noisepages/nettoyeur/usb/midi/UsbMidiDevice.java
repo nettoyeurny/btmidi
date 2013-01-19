@@ -288,36 +288,24 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 			UsbInterface iface = device.getInterface(i);
 			// We really ought to check interface class and subclass, but we don't since a lot of MIDI devices don't comply with the standard.
 			// if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;
-			List<UsbEndpoint> inputs = new ArrayList<UsbEndpoint>();
-			List<UsbEndpoint> outputs = new ArrayList<UsbEndpoint>();
+			List<UsbMidiInput> inputs = new ArrayList<UsbMidiInput>();
+			List<UsbMidiOutput> outputs = new ArrayList<UsbMidiOutput>();
 			int epCount = iface.getEndpointCount();
 			for (int j = 0; j < epCount; ++j) {
 				UsbEndpoint ep = iface.getEndpoint(j);
 				// If the endpoint looks like a MIDI endpoint, assume that it is one.
 				if (ep.getMaxPacketSize() == 64 && (ep.getType() & UsbConstants.USB_ENDPOINT_XFERTYPE_MASK) == UsbConstants.USB_ENDPOINT_XFER_BULK) {
 					if ((ep.getDirection() & UsbConstants.USB_ENDPOINT_DIR_MASK) == UsbConstants.USB_DIR_IN) {
-						inputs.add(ep);
+						inputs.add(new UsbMidiInput(ep));
 					} else {
-						outputs.add(ep);
+						outputs.add(new UsbMidiOutput(ep));
 					}
 				}
 			}
 			if (!inputs.isEmpty() || !outputs.isEmpty()) {
-				addInterface(iface, inputs, outputs);
+				interfaces.add(new UsbMidiInterface(iface, inputs, outputs));
 			}
 		}
-	}
-
-	private void addInterface(UsbInterface iface, List<UsbEndpoint> inputs, List<UsbEndpoint> outputs) {
-		List<UsbMidiInput> midiInputs = new ArrayList<UsbMidiDevice.UsbMidiInput>();
-		List<UsbMidiOutput> midiOutputs = new ArrayList<UsbMidiDevice.UsbMidiOutput>();
-		for (UsbEndpoint ep : inputs) {
-			midiInputs.add(new UsbMidiInput(ep));
-		}
-		for (UsbEndpoint ep: outputs) {
-			midiOutputs.add(new UsbMidiOutput(ep));
-		}
-		interfaces.add(new UsbMidiInterface(iface, midiInputs, midiOutputs));
 	}
 
 	/**

@@ -19,7 +19,6 @@ import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.usb.UsbBroadcastHandler;
-import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
 import com.noisepages.nettoyeur.usb.midi.util.UsbMidiInputSelector;
@@ -165,7 +164,7 @@ public class UsbMidiTest extends Activity {
 
 	private void chooseMidiDevice() {
 		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
-		new AsyncDeviceInfoLookup<UsbDeviceWithInfo>() {
+		new AsyncDeviceInfoLookup() {
 
 			@Override
 			protected void onLookupComplete() {

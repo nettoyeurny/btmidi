@@ -284,7 +284,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 
 	private void chooseMidiDevice() {
 		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
-		new AsyncDeviceInfoLookup<UsbMidiDevice>() {
+		new AsyncDeviceInfoLookup() {
 			
 			@Override
 			protected void onLookupComplete() {

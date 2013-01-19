@@ -25,10 +25,10 @@ import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
  * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public abstract class AsyncDeviceInfoLookup<T extends UsbDeviceWithInfo> extends AsyncTask<T, Void, Void> {
+public abstract class AsyncDeviceInfoLookup extends AsyncTask<UsbDeviceWithInfo, Void, Void> {
 
 	@Override
-	protected Void doInBackground(T... params) {
+	protected Void doInBackground(UsbDeviceWithInfo... params) {
 		for (UsbDeviceWithInfo device : params) {
 			device.retrieveReadableDeviceInfo();
 		}
