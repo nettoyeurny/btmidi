@@ -41,16 +41,6 @@ public abstract class AsyncDeviceInfoLookup<T extends UsbDeviceWithInfo> extends
 	}
 
 	/**
-	 * Asynchronously retries human-readable device info for the given devices; invokes onLookupComplete
-	 * when done.
-	 * 
-	 * @param devices
-	 */
-	public void retrieveDeviceInfo(T... devices) {
-		execute(devices);
-	}
-	
-	/**
 	 * Invoked when device info for all given devices has been looked up (regardless of whether the lookup
 	 * was successful).
 	 */

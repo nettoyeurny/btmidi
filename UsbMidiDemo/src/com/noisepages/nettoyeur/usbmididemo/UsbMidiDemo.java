@@ -302,6 +302,6 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					}
 				}.show(getFragmentManager(), null);
 			}
-		}.retrieveDeviceInfo(devices.toArray(new UsbMidiDevice[devices.size()]));
+		}.execute(devices.toArray(new UsbMidiDevice[devices.size()]));
 	}
 }

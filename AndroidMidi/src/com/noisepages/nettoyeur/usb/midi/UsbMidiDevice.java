@@ -269,6 +269,18 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 		return midiDevices;
 	}
 
+	/**
+	 * Wraps a given USB device as a MIDI device if possible. If the device has no USB endpoints that look like MIDI
+	 * endpoints, the result will be null. Otherwise, we'll just assume that the device is a MIDI device.
+	 * 
+	 * @param device to be wrapped
+	 * @return MIDI device if possible, null otherwise
+	 */
+	public static UsbMidiDevice asMidiDevice(UsbDevice device) {
+		UsbMidiDevice midiDevice = new UsbMidiDevice(device);
+		return (!midiDevice.getInterfaces().isEmpty()) ? midiDevice : null;
+	}
+	
 	private UsbMidiDevice(UsbDevice device) {
 		super(device);
 		int ifaceCount = device.getInterfaceCount();
