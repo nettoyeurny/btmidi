@@ -98,7 +98,7 @@ public class UsbMidiTest extends Activity {
 				new UsbMidiInputSelector(midiDevice) {
 
 					@Override
-					protected void onInputSelected(UsbMidiInput input, int iface, int index) {
+					protected void onInputSelected(UsbMidiInput input, UsbMidiDevice device, int iface, int index) {
 						mainText.setText(mainText.getText() + "\n\nInput: Interface " + iface + ", Index " + index);
 						input.setReceiver(midiReceiver);
 						input.start();
@@ -106,7 +106,7 @@ public class UsbMidiTest extends Activity {
 					}
 
 					@Override
-					protected void onNoSelection() {
+					protected void onNoSelection(UsbMidiDevice device) {
 						mainText.setText(mainText.getText() + "\n\nNo inputs available.");
 					}
 				}.show(getFragmentManager(), null);

@@ -44,5 +44,5 @@ public abstract class AsyncDeviceInfoLookup extends AsyncTask<UsbDeviceWithInfo,
 	 * Invoked when device info for all given devices has been looked up (regardless of whether the lookup
 	 * was successful).
 	 */
-	abstract protected void onLookupComplete();
+	protected abstract void onLookupComplete();
 }

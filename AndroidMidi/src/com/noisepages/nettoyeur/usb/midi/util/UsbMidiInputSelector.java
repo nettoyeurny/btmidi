@@ -67,7 +67,7 @@ public abstract class UsbMidiInputSelector extends DialogFragment {
 						index -= device.getInterfaces().get(iface).getInputs().size();
 						++iface;
 					}
-					onInputSelected(device.getInterfaces().get(iface).getInputs().get(index), iface, index);
+					onInputSelected(device.getInterfaces().get(iface).getInputs().get(index), device, iface, index);
 				}
 
 			});
@@ -76,7 +76,7 @@ public abstract class UsbMidiInputSelector extends DialogFragment {
 
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					onNoSelection();
+					onNoSelection(device);
 				}
 			});
 		}
@@ -86,20 +86,23 @@ public abstract class UsbMidiInputSelector extends DialogFragment {
 
 	@Override
 	public void onCancel(android.content.DialogInterface dialog) {
-		onNoSelection();
+		onNoSelection(device);
 	}
 
 	/**
 	 * Handle selected MIDI inputs in this method.
 	 * 
 	 * @param input selection
+	 * @param device that the selection belongs to
 	 * @param iface index of the interface that the selected input belongs to
 	 * @param index index of the selected input within its interface
 	 */
-	protected abstract void onInputSelected(UsbMidiInput input, int iface, int index);
+	protected abstract void onInputSelected(UsbMidiInput input, UsbMidiDevice device, int iface, int index);
 
 	/**
 	 * Handle cancellation as well as devices without inputs.
+	 * 
+	 * @param device that this dialog belongs to
 	 */
-	protected abstract void onNoSelection();
+	protected abstract void onNoSelection(UsbMidiDevice device);
 }

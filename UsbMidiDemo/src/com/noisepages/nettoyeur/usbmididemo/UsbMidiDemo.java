@@ -176,20 +176,20 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 				final UsbMidiOutputSelector outputSelector = new UsbMidiOutputSelector(midiDevice) {
 
 					@Override
-					protected void onOutputSelected(UsbMidiOutput output, int iface, int index) {
+					protected void onOutputSelected(UsbMidiOutput output, UsbMidiDevice device, int iface, int index) {
 						toast("Output selection: Interface " + iface + ", Output " + index);
 						midiOut = output.getMidiOut();
 					}
 					
 					@Override
-					protected void onNoSelection() {
+					protected void onNoSelection(UsbMidiDevice device) {
 						toast("No output selected");
 					}
 				};
 				new UsbMidiInputSelector(midiDevice) {
 					
 					@Override
-					protected void onInputSelected(UsbMidiInput input, int iface, int index) {
+					protected void onInputSelected(UsbMidiInput input, UsbMidiDevice device, int iface, int index) {
 						toast("Input selection: Interface " + iface + ", Input " + index);
 						input.setReceiver(receiver);
 						input.start();
@@ -197,7 +197,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					}
 					
 					@Override
-					protected void onNoSelection() {
+					protected void onNoSelection(UsbMidiDevice device) {
 						toast("No input selected");
 						outputSelector.show(getFragmentManager(), null);
 					}
