@@ -17,7 +17,6 @@
 package com.noisepages.nettoyeur.usb.midi;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,7 +27,6 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
-import android.util.Log;
 
 import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
@@ -53,8 +51,6 @@ import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
  */
 public class UsbMidiDevice extends UsbDeviceWithInfo {
 
-	private final static String TAG = "UsbMidiDevice";
-	
 	// USB payload size by Code Index Number.
 	private static final int[] midiPayloadSize = new int[] {
 		/* 0x00 */ -1, /* 0x01 */ -1,  // Reserved for future extensions; currently unused
@@ -119,7 +115,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 	 */
 	public class UsbMidiInput {
 		private final UsbEndpoint inputEndpoint;
-		private volatile FromWireConverter fromWire;
+		private volatile FromWireConverter fromWire = null;
 		private volatile int cable = -1;
 		private volatile Thread inputThread = null;
 
@@ -146,7 +142,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 		 * @param c virtual cable number, or -1 if listening on all cables
 		 */
 		public void setVirtualCable(int c) {
-			cable = (c >= 0) ? (c << 4) & 0xf0 : -1;
+			cable = (c >= 0) ? ((c << 4) & 0xf0) : -1;
 		}
 
 		/**
@@ -166,7 +162,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 					while (!interrupted()) {
 						int nRead = connection.bulkTransfer(inputEndpoint, inputBuffer, inputBuffer.length, 100);
 						for (int i = 0; i < nRead; i += 4) {
-							byte b = inputBuffer[i];
+							int b = inputBuffer[i];
 							if (cable >= 0 && (b & 0xf0) != cable) continue;
 							int n = midiPayloadSize[b & 0x0f];
 							if (n < 0) continue;
@@ -205,31 +201,57 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 		private volatile int cable;
 
 		private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
-			private final byte[] outBuffer = new byte[4];
+			private final byte[] outBuffer = new byte[64];
+			int writeIndex = 0;
+			
 			@Override
-			public void onBytesReceived(int nBytes, byte[] buffer) {
+			public synchronized void onBytesReceived(int nBytes, byte[] buffer) {
 				if (connection == null) return;
-				if (nBytes == 0) return;
-				if (nBytes > 3) {
-					Log.w(TAG, "bad buffer size: " + nBytes);
-					return;
+				for (int start = 0, end; start < nBytes; start = end) {
+					for (end = start + 1; end < nBytes && (buffer[end] == (byte)0xf7 || buffer[end] >= 0); ++end);
+					processChunk(buffer, start, end);
 				}
-				Arrays.fill(outBuffer, (byte) 0);
-				if (nBytes > 1) {
-					outBuffer[0] = (byte) (cable | (buffer[0] >> 4));
+				transfer();
+			}
+				
+			private void processChunk(byte[] buffer, int start, int end) {
+				int cin = (buffer[start] >> 4) & 0x0f;
+				if (cin >= 0x08 && cin < 0x0f && end - start == midiPayloadSize[cin]) {
+					// The most common case: Correctly formed MIDI channel message.
+					outBuffer[writeIndex++] = (byte) (cable | cin);
+					while (start < end) {
+						outBuffer[writeIndex++] = buffer[start++];
+					}
+					while ((writeIndex & 0x03) != 0) {
+						outBuffer[writeIndex++] = 0;
+					}
+					transferIfFull();
 				} else {
-					outBuffer[0] = (byte) (cable | 0x0f);
+					// No channel message? Just dump single bytes.
+					while (start < end) {
+						outBuffer[writeIndex++] = (byte) (cable | 0x0f);
+						outBuffer[writeIndex++] = buffer[start++];
+						outBuffer[writeIndex++] = 0;
+						outBuffer[writeIndex++] = 0;
+						transferIfFull();
+					}
 				}
-				for (int i = 0; i < nBytes; ++i) {
-					outBuffer[i + 1] = buffer[i];
+			}
+				
+			private void transferIfFull() {
+				if (writeIndex >= outBuffer.length) {
+					transfer();
 				}
-				connection.bulkTransfer(outputEndpoint, outBuffer, 4, 0);
+			}
+			private void transfer() {
+				connection.bulkTransfer(outputEndpoint, outBuffer, writeIndex, 0);
+				writeIndex = 0;
 			}
 		});
 
 		private UsbMidiOutput(UsbEndpoint ep) {
 			outputEndpoint = ep;
-			setVirtualCable(1);
+			setVirtualCable(0);
 		}
 
 		@Override
