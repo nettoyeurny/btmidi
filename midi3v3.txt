@@ -5,3 +5,8 @@ The 3.3V MIDI gadget has three connectors, as follows:
   * 4 pins - Bluetooth module: RX, TX, GND, VIN
 
 The attached picture shows the gadget with all components plugged in.
+
+The Bluetooth module is an RN-42 Bluetooth transceiver and the IC is a 6N138 optocoupler. The transistor is a generic PNP transistor. Resistor values are marked in the Fritzing project.
+
+Bluetooth transceiver: https://www.sparkfun.com/products/10253?
+Stepup voltage converter: https://www.sparkfun.com/products/10967?
