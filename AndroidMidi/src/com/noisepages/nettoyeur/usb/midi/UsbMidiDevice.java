@@ -55,6 +55,15 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 
 	private final static String TAG = "UsbMidiDevice";
 	
+	// USB payload size by Code Index Number.
+	private static final int[] midiPayloadSize = new int[] {
+		/* 0x00 */ -1, /* 0x01 */ -1,  // Reserved for future extensions; currently unused
+		/* 0x02 */ 2, /* 0x03 */ 3,  // System common
+		/* 0x04 */ 3, /* 0x05 */ 1, /* 0x06 */ 2, /* 0x07 */ 3,  // System exclusive
+		/* 0x08 */ 3, /* 0x09 */ 3, /* 0x0a */ 3, /* 0x0b */ 3, /* 0x0c */ 2, /* 0x0d */ 2, /* 0x0e */ 3,  // Channel messages
+		/* 0x0f */ 1  // MIDI byte
+	};
+		
 	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
 	private volatile UsbDeviceConnection connection = null;
 
@@ -159,18 +168,12 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 						for (int i = 0; i < nRead; i += 4) {
 							byte b = inputBuffer[i];
 							if (cable >= 0 && (b & 0xf0) != cable) continue;
-							b &= 0x0f;
-							if (b >= 0x08) {
-								int n = 0;
-								tmpBuffer[n++] = inputBuffer[i + 1];
-								if (b != 0x0f) {
-									tmpBuffer[n++] = inputBuffer[i + 2];
-									if (b != 0x0c && b != 0x0d) {
-										tmpBuffer[n++] = inputBuffer[i + 3];
-									}
-								}
-								fromWire.onBytesReceived(n, tmpBuffer);
+							int n = midiPayloadSize[b & 0x0f];
+							if (n < 0) continue;
+							for (int j = 0; j < n; ++j) {
+								tmpBuffer[j] = inputBuffer[i + j + 1];
 							}
+							fromWire.onBytesReceived(n, tmpBuffer);
 						}
 					}
 				}

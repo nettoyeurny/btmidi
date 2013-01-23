@@ -108,7 +108,7 @@ public class FromWireConverter implements RawByteReceiver {
 					firstByte = -1;
 				}
 				break;
-			default:
+			default /* State.NONE */:
 				midiReceiver.onRawByte(b);
 				break;
 			}
