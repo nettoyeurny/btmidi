@@ -58,7 +58,7 @@ public class FromWireConverter implements RawByteReceiver {
 				channel = b & 0x0f;
 				firstByte = -1;
 			} else {
-				midiReceiver.onRawByte(b);
+				midiReceiver.onRawByte((byte) b);
 			}
 		} else {
 			switch (midiState) {
@@ -109,7 +109,7 @@ public class FromWireConverter implements RawByteReceiver {
 				}
 				break;
 			default /* State.NONE */:
-				midiReceiver.onRawByte(b);
+				midiReceiver.onRawByte((byte) b);
 				break;
 			}
 		}

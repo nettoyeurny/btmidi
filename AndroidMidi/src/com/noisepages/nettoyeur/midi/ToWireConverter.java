@@ -67,8 +67,8 @@ public class ToWireConverter implements MidiReceiver {
 	}
 
 	@Override
-	public void onRawByte(int value) {
-		writeBytes((byte) value);
+	public void onRawByte(byte value) {
+		writeBytes(value);
 	}
 
 	private void write(int msg, int ch, int a) {

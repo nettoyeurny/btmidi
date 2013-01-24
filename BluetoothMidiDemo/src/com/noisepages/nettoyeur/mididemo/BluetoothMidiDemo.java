@@ -124,7 +124,7 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 		}
 
 		@Override
-		public void onRawByte(int value) {
+		public void onRawByte(byte value) {
 		}
 	};
 

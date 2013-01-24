@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2013 Peter Brinkmann (peter.brinkmann@gmail.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.noisepages.nettoyeur.midi;
 
 import org.easymock.EasyMock;
@@ -142,11 +158,11 @@ public class ToWireConverterTest {
 		msg = new byte[] { (byte) 0xf7 };
 		receiver.onBytesReceived(EasyMock.eq(msg.length), EasyMock.aryEq(msg));
 		EasyMock.replay(receiver);
-		converter.onRawByte(0xf0);
-		converter.onRawByte(0x01);
-		converter.onRawByte(0x02);
-		converter.onRawByte(0x03);
-		converter.onRawByte(0xf7);
+		converter.onRawByte((byte) 0xf0);
+		converter.onRawByte((byte) 0x01);
+		converter.onRawByte((byte) 0x02);
+		converter.onRawByte((byte) 0x03);
+		converter.onRawByte((byte) 0xf7);
 		EasyMock.verify(receiver);
 	}
 }

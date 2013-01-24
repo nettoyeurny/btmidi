@@ -118,7 +118,7 @@ public class BluetoothMidiTest extends Activity implements OnClickListener {
 		}
 
 		@Override
-		public void onRawByte(int value) {
+		public void onRawByte(byte value) {
 			post("raw byte: " + Integer.toHexString(value));
 		}
 	};

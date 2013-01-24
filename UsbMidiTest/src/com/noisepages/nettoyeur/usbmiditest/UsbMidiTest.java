@@ -34,7 +34,7 @@ public class UsbMidiTest extends Activity {
 
 	private final MidiReceiver midiReceiver = new MidiReceiver() {
 		@Override
-		public void onRawByte(int value) {
+		public void onRawByte(byte value) {
 			update("raw byte: " + value);
 		}
 

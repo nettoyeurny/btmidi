@@ -98,5 +98,5 @@ public interface MidiReceiver {
 	 * 
 	 * @param value
 	 */
-	void onRawByte(int value);
+	void onRawByte(byte value);
 }
