@@ -18,6 +18,7 @@ import android.view.MenuItem;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
+import com.noisepages.nettoyeur.usb.DeviceNotConnectedException;
 import com.noisepages.nettoyeur.usb.UsbBroadcastHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
@@ -77,7 +78,7 @@ public class UsbMidiTest extends Activity {
 		handler.post(new Runnable() {
 			@Override
 			public void run() {
-				mainText.setText(n);
+				mainText.setText(mainText.getText() + "\n\n" + n);
 			}
 		});
 	}
@@ -99,15 +100,18 @@ public class UsbMidiTest extends Activity {
 
 					@Override
 					protected void onInputSelected(UsbMidiInput input, UsbMidiDevice device, int iface, int index) {
-						mainText.setText(mainText.getText() + "\n\nInput: Interface " + iface + ", Index " + index);
+						update("\n\nInput: Interface " + iface + ", Index " + index);
 						input.setReceiver(midiReceiver);
-						input.start();
-
+						try {
+							input.start();
+						} catch (DeviceNotConnectedException e) {
+							mainText.setText("MIDI device has been disconnected.");
+						}
 					}
 
 					@Override
 					protected void onNoSelection(UsbMidiDevice device) {
-						mainText.setText(mainText.getText() + "\n\nNo inputs available.");
+						update("\n\nNo inputs available.");
 					}
 				}.show(getFragmentManager(), null);
 			}

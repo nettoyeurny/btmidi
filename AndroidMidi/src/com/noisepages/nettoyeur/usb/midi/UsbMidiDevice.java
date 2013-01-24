@@ -32,6 +32,7 @@ import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
+import com.noisepages.nettoyeur.usb.DeviceNotConnectedException;
 import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
 
 /**
@@ -147,12 +148,16 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 
 		/**
 		 * Starts listening to this MIDI input; requires a receiver to be in place.
+		 * 
+		 * @throws DeviceNotConnectedException if the MIDI device is not connected
 		 */
-		public void start() {
+		public void start() throws DeviceNotConnectedException {
 			if (fromWire == null) {
 				throw new IllegalStateException("no receiver");
 			}
-			if (connection == null) return;
+			if (connection == null) {
+				throw new DeviceNotConnectedException();
+			}
 			stop();
 			inputThread = new Thread() {
 				private final byte[] inputBuffer = new byte[64];

@@ -23,6 +23,7 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
+import com.noisepages.nettoyeur.usb.DeviceNotConnectedException;
 import com.noisepages.nettoyeur.usb.UsbBroadcastHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
@@ -192,7 +193,12 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 					protected void onInputSelected(UsbMidiInput input, UsbMidiDevice device, int iface, int index) {
 						toast("Input selection: Interface " + iface + ", Input " + index);
 						input.setReceiver(receiver);
-						input.start();
+						try {
+							input.start();
+						} catch (DeviceNotConnectedException e) {
+							toast("MIDI device has been disconnected");
+							return;
+						}
 						outputSelector.show(getFragmentManager(), null);
 					}
 					
