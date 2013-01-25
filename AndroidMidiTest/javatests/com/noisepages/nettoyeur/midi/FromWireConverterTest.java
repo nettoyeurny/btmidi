@@ -141,6 +141,21 @@ public class FromWireConverterTest {
 	}
 	
 	@Test
+	public void testCompoundMessages() {
+		receiver.onNoteOff(0x03, 0x48, 0x7f);
+		receiver.onNoteOff(0x03, 0x60, 0x23);
+		receiver.onPolyAftertouch(0x0b, 0x10, 0x2f);
+		receiver.onPolyAftertouch(0x0b, 0x7f, 0x50);
+		receiver.onNoteOn(0x08, 0x30, 0x70);
+		receiver.onNoteOn(0x08, 0x60, 0x75);
+		EasyMock.replay(receiver);
+		// Probably not too common, but I've seen sequences like this from my Roland HP-3e digital piano.
+		byte[] msg = new byte[] { (byte) 0x83, 0x48, 0x7f, 0x60, 0x23, (byte) 0xab, 0x10, 0x2f, 0x7f, 0x50, (byte) 0x98, 0x30, 0x70, 0x60, 0x75 };
+		converter.onBytesReceived(msg.length, msg);
+		EasyMock.verify(receiver);
+	}
+	
+	@Test
 	public void testMixedMessages() {  // No pun intended.
 		receiver.onPitchBend(0x04, -1);
 		receiver.onPitchBend(0x00, -2);
