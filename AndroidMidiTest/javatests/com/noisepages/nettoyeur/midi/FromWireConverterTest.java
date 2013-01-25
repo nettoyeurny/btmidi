@@ -155,12 +155,44 @@ public class FromWireConverterTest {
 		receiver.onPolyAftertouch(0x01, 0x60, 0x0f);
 		receiver.onPolyAftertouch(0x0f, 0x00, 0x00);
 		EasyMock.replay(receiver);
-		byte[] msg = new byte[] { (byte) 0xe4, 0x7f, 0x3f, (byte) 0xe0, 0x7e, 0x3f, (byte) 0xef, 0x05, 0x40,
+		byte[] msg = new byte[] {
+				(byte) 0xe4, 0x7f, 0x3f, (byte) 0xe0, 0x7e, 0x3f, (byte) 0xef, 0x05, 0x40,
 				(byte) 0xc1, 0x60, (byte) 0xcf, 0x00,
 				(byte) 0xf0, 0x01, 0x02, 0x03, (byte) 0xf7,
 				(byte) 0xa1, 0x60, 0x0f, (byte) 0xaf, 0x00, 0x00
 		};
 		converter.onBytesReceived(msg.length, msg);
+		EasyMock.verify(receiver);
+	}
+	
+	@Test
+	public void testIdentity() {  // Somewhat redundant, but it's satisfying to see this work.
+		ToWireConverter identity = new ToWireConverter(converter);
+		receiver.onPitchBend(0x04, -1);
+		receiver.onPitchBend(0x00, -2);
+		receiver.onPitchBend(0x0f, 5);
+		receiver.onProgramChange(0x01, 0x60);
+		receiver.onProgramChange(0x0f, 0x00);
+		receiver.onRawByte((byte) 0xf0);
+		receiver.onRawByte((byte) 0x01);
+		receiver.onRawByte((byte) 0x02);
+		receiver.onRawByte((byte) 0x03);
+		receiver.onRawByte((byte) 0xf7);
+		receiver.onPolyAftertouch(0x01, 0x60, 0x0f);
+		receiver.onPolyAftertouch(0x0f, 0x00, 0x00);
+		EasyMock.replay(receiver);
+		identity.onPitchBend(0x04, -1);
+		identity.onPitchBend(0x00, -2);
+		identity.onPitchBend(0x0f, 5);
+		identity.onProgramChange(0x01, 0x60);
+		identity.onProgramChange(0x0f, 0x00);
+		identity.onRawByte((byte) 0xf0);
+		identity.onRawByte((byte) 0x01);
+		identity.onRawByte((byte) 0x02);
+		identity.onRawByte((byte) 0x03);
+		identity.onRawByte((byte) 0xf7);
+		identity.onPolyAftertouch(0x01, 0x60, 0x0f);
+		identity.onPolyAftertouch(0x0f, 0x00, 0x00);
 		EasyMock.verify(receiver);
 	}
 }

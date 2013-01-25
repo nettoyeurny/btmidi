@@ -165,4 +165,37 @@ public class ToWireConverterTest {
 		converter.onRawByte((byte) 0xf7);
 		EasyMock.verify(receiver);
 	}
+	
+	@Test
+	public void testIdentity() {  // Somewhat redundant, but it's satisfying to see this work.
+		FromWireConverter identity = new FromWireConverter(converter);
+		byte[] msg1 = new byte[] { (byte) 0x81, 0x60, 0x0f };
+		receiver.onBytesReceived(EasyMock.eq(msg1.length), EasyMock.aryEq(msg1));
+		byte[] msg2 = new byte[] { (byte) 0x8f, 0x00, 0x00 };
+		receiver.onBytesReceived(EasyMock.eq(msg2.length), EasyMock.aryEq(msg2));
+		byte[] msg3 = new byte[] { (byte) 0xe4, 0x00, 0x00 };
+		receiver.onBytesReceived(EasyMock.eq(msg3.length), EasyMock.aryEq(msg3));
+		byte[] msg4 = new byte[] { (byte) 0xe4, 0x7f, 0x3f };
+		receiver.onBytesReceived(EasyMock.eq(msg4.length), EasyMock.aryEq(msg4));
+		byte[] msg5 = new byte[] { (byte) 0xe0, 0x7e, 0x3f };
+		receiver.onBytesReceived(EasyMock.eq(msg5.length), EasyMock.aryEq(msg5));
+		byte[] msg6 = new byte[] { (byte) 0xf0, 0x01, 0x02, 0x03, (byte) 0xf7 };
+		for (byte b : msg6) {
+			receiver.onBytesReceived(EasyMock.eq(1), EasyMock.aryEq(new byte[] {b}));
+		}
+		byte[] msg7 = new byte[] { (byte) 0xc1, 0x60 };
+		receiver.onBytesReceived(EasyMock.eq(msg7.length), EasyMock.aryEq(msg7));
+		byte[] msg8 = new byte[] { (byte) 0xcf, 0x00 };
+		receiver.onBytesReceived(EasyMock.eq(msg8.length), EasyMock.aryEq(msg8));
+		EasyMock.replay(receiver);
+		identity.onBytesReceived(msg1.length, msg1);
+		identity.onBytesReceived(msg2.length, msg2);
+		identity.onBytesReceived(msg3.length, msg3);
+		identity.onBytesReceived(msg4.length, msg4);
+		identity.onBytesReceived(msg5.length, msg5);
+		identity.onBytesReceived(msg6.length, msg6);
+		identity.onBytesReceived(msg7.length, msg7);
+		identity.onBytesReceived(msg8.length, msg8);
+		EasyMock.verify(receiver);
+	}
 }
