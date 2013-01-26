@@ -20,7 +20,7 @@ package com.noisepages.nettoyeur.midi;
 /**
  * Callback for handling raw byte input.
  * 
- * @author Peter Brinkmann
+ * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
 public interface RawByteReceiver {
 

@@ -20,7 +20,7 @@ package com.noisepages.nettoyeur.midi;
 /**
  * Converter from MIDI events to MIDI wire format.
  * 
- * @author Peter Brinkmann
+ * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
 public class ToWireConverter implements MidiReceiver {
 
