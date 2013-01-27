@@ -44,4 +44,18 @@ public interface SystemMessageReceiver {
 	void onStop();
 	void onActiveSensing();
 	void onSystemReset();
+	
+	public static class DummyReceiver implements SystemMessageReceiver {
+		@Override public void onSystemExclusive(byte[] sysex) {}
+		@Override public void onTimeCode(int value) {}
+		@Override public void onSongPosition(int pointer) {}
+		@Override public void onSongSelect(int index) {}
+		@Override public void onTuneRequest() {}
+		@Override public void onTimingClock() {}
+		@Override public void onStart() {}
+		@Override public void onContinue() {}
+		@Override public void onStop() {}
+		@Override public void onActiveSensing() {}
+		@Override public void onSystemReset() {}
+	}
 }

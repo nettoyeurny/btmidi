@@ -101,4 +101,15 @@ public interface MidiReceiver {
 	 * @param value raw MIDI byte
 	 */
 	void onRawByte(byte value);
+	
+	public static class DummyReceiver implements MidiReceiver {
+		@Override public void onNoteOff(int channel, int key, int velocity) {}
+		@Override public void onNoteOn(int channel, int key, int velocity) {}
+		@Override public void onPolyAftertouch(int channel, int key, int velocity) {}
+		@Override public void onControlChange(int channel, int controller, int value) {}
+		@Override public void onProgramChange(int channel, int program) {}
+		@Override public void onAftertouch(int channel, int velocity) {}
+		@Override public void onPitchBend(int channel, int value) {}
+		@Override public void onRawByte(byte value) {}
+	}
 }
