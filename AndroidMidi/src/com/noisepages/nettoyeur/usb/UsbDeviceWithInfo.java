@@ -49,7 +49,7 @@ public class UsbDeviceWithInfo {
 	 * @param handler
 	 */
 	public static void installBroadcastHandler(Context context, final UsbBroadcastHandler handler) {
-		uninstallPermissionHandler(context);
+		uninstallBroadcastHandler(context);
 		broadcastReceiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -77,7 +77,7 @@ public class UsbDeviceWithInfo {
 	 * 
 	 * @param context the current context, e.g., the activity invoking this method
 	 */
-	public static void uninstallPermissionHandler(Context context) {
+	public static void uninstallBroadcastHandler(Context context) {
 		if (broadcastReceiver != null) {
 			context.unregisterReceiver(broadcastReceiver);
 			broadcastReceiver = null;

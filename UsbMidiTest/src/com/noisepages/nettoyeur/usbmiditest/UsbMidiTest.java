@@ -92,6 +92,11 @@ public class UsbMidiTest extends Activity {
 		setContentView(R.layout.activity_main);
 		mainText = (TextView) findViewById(R.id.mainText);
 		mainText.setMovementMethod(new ScrollingMovementMethod());
+	}
+	
+	@Override
+	protected void onStart() {
+		super.onStart();
 		UsbMidiDevice.installBroadcastHandler(this, new UsbBroadcastHandler() {
 			
 			@Override
@@ -144,12 +149,17 @@ public class UsbMidiTest extends Activity {
 	}
 
 	@Override
+	protected void onStop() {
+		super.onStop();
+		UsbMidiDevice.uninstallBroadcastHandler(this);
+	}
+	
+	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		if (midiDevice != null) {
 			midiDevice.close();
 		}
-		UsbMidiDevice.uninstallPermissionHandler(this);
 	}
 
 	@Override
