@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-package com.noisepages.nettoyeur.bluetooth;
+package com.noisepages.nettoyeur.bluetooth.util;
 
 import java.util.Set;
 
@@ -70,11 +70,6 @@ public class DeviceListActivity extends Activity {
 			String noDevices = getResources().getText(R.string.none_paired).toString();
 			pairedDevicesAdapter.add(noDevices);
 		}
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
 	}
 
 	private OnItemClickListener clickListener = new OnItemClickListener() {

@@ -35,7 +35,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
-import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
+import com.noisepages.nettoyeur.bluetooth.util.DeviceListActivity;
 
 
 /**

@@ -21,8 +21,8 @@ import android.widget.Toast;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
-import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
 import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiDevice;
+import com.noisepages.nettoyeur.bluetooth.util.DeviceListActivity;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 
 public class BluetoothMidiTest extends Activity implements OnClickListener {
