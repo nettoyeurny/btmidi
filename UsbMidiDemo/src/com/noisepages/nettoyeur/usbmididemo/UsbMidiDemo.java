@@ -169,11 +169,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 		for (ImageButton key : keys) {
 			key.setOnTouchListener(this);
 		}
-	}
-	
-	@Override
-	protected void onStart() {
-		super.onStart();
+		
 		UsbMidiDevice.installBroadcastHandler(this, new UsbBroadcastHandler() {
 
 			@Override
@@ -249,17 +245,12 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 	}
 
 	@Override
-	protected void onStop() {
-		super.onStop();
-		UsbMidiDevice.uninstallBroadcastHandler(this);
-	}
-	
-	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		if (midiDevice != null) {
 			midiDevice.close();
 		}
+		UsbMidiDevice.uninstallBroadcastHandler(this);
 	}
 
 	public boolean onTouch(View view, MotionEvent motionEvent) {
