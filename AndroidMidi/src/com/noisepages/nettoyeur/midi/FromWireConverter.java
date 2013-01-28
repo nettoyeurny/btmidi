@@ -16,6 +16,8 @@
 
 package com.noisepages.nettoyeur.midi;
 
+import com.noisepages.nettoyeur.common.RawByteReceiver;
+
 
 /**
  * Converter from MIDI wire format to MIDI events.

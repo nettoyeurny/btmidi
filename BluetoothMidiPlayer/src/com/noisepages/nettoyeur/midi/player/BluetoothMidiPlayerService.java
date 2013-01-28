@@ -1,3 +1,4 @@
+
 /* Copyright (C) 2011 Peter Brinkmann
  *
  * This program is free software; you can redistribute it and/or modify
@@ -39,7 +40,7 @@ import android.util.Log;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
-import com.noisepages.nettoyeur.midi.RawByteReceiver;
+import com.noisepages.nettoyeur.common.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.file.InvalidMidiDataException;
 import com.noisepages.nettoyeur.midi.player.MidiFileSequencer.CompoundMidiEvent;
 
@@ -196,7 +197,7 @@ public class BluetoothMidiPlayerService extends Service {
 	 * @return state of the Bluetooth connection
 	 */
 	public BluetoothSppConnection.State getState() {
-		return btConnection.getState();
+		return btConnection.getConnectionState();
 	}
 
 	/**

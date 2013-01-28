@@ -16,12 +16,13 @@
 
 package com.noisepages.nettoyeur.usb;
 
+import java.io.IOException;
 
 /**
- * Checked exception for handling unconnected USB devices.
+ * Based class for handling checked USB-related exceptions.
  *
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public class DeviceNotConnectedException extends UsbException {
+public class UsbException extends IOException {
 	private static final long serialVersionUID = 1L;
 }

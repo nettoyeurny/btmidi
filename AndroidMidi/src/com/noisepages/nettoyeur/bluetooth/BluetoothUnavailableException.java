@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Peter Brinkmann (peter.brinkmann@gmail.com)
+ * Copyright (C) 2013 Peter Brinkmann (peter.brinkmann@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-package com.noisepages.nettoyeur.midi;
+package com.noisepages.nettoyeur.bluetooth;
 
 
 /**
- * Callback for handling raw byte input.
- * 
+ * Exception indicating that no Bluetooth device is connected.
+ *
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public interface RawByteReceiver {
-
-	/**
-	 * Processes the given buffer.
-	 * 
-	 * @param nBytes number of bytes to be processed, started at the beginning of the buffer
-	 * @param buffer buffer to be processed
-	 */
-	void onBytesReceived(int nBytes, byte[] buffer);
-
+public class BluetoothUnavailableException extends BluetoothException {
+	private static final long serialVersionUID = 1L;
 }

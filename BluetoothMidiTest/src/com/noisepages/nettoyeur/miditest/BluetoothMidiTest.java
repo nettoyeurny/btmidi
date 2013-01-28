@@ -11,10 +11,7 @@ import java.io.IOException;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.os.IBinder;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -25,7 +22,7 @@ import android.widget.Toast;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
 import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
-import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
+import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiDevice;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 
 public class BluetoothMidiTest extends Activity implements OnClickListener {
@@ -38,7 +35,7 @@ public class BluetoothMidiTest extends Activity implements OnClickListener {
 	private Button play;
 	private TextView logs;
 
-	private BluetoothMidiService midiService = null;
+	private BluetoothMidiDevice midiService = null;
 
 	private Toast toast = null;
 	
@@ -123,29 +120,16 @@ public class BluetoothMidiTest extends Activity implements OnClickListener {
 		}
 	};
 
-	private final ServiceConnection connection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName name, IBinder service) {
-			midiService = ((BluetoothMidiService.BluetoothMidiBinder)service).getService();
-			try {
-				midiService.init(observer, receiver);
-			} catch (IOException e) {
-				toast("MIDI not available");
-				finish();
-			}
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName name) {
-			// this method will never be called
-		}
-	};
-
 	@Override
 	protected void onCreate(android.os.Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		initGui();
-		bindService(new Intent(this, BluetoothMidiService.class), connection, BIND_AUTO_CREATE);		
+		try {
+			midiService = new BluetoothMidiDevice(observer, receiver);
+		} catch (IOException e) {
+			toast("MIDI not available");
+			finish();
+		}
 	};
 
 	@Override
@@ -165,10 +149,8 @@ public class BluetoothMidiTest extends Activity implements OnClickListener {
 	}
 
 	private void cleanup() {
-		try {
-			unbindService(connection);
-		} catch (IllegalArgumentException e) {
-			// already unbound
+		if (midiService != null) {
+			midiService.stop();
 			midiService = null;
 		}
 	}
@@ -186,7 +168,7 @@ public class BluetoothMidiTest extends Activity implements OnClickListener {
 	public void onClick(View v) {
 		switch (v.getId()) {
 		case R.id.connect_button:
-			if (midiService.getState() == BluetoothSppConnection.State.NONE) {
+			if (midiService.getConnectionState() == BluetoothSppConnection.State.NONE) {
 				startActivityForResult(new Intent(this, DeviceListActivity.class), CONNECT);
 			} else {
 				midiService.stop();

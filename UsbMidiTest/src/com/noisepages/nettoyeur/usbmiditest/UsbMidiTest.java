@@ -18,7 +18,9 @@ import android.view.MenuItem;
 import android.widget.TextView;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
+import com.noisepages.nettoyeur.usb.ConnectionFailedException;
 import com.noisepages.nettoyeur.usb.DeviceNotConnectedException;
+import com.noisepages.nettoyeur.usb.InterfaceNotAvailableException;
 import com.noisepages.nettoyeur.usb.UsbBroadcastHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
@@ -95,7 +97,13 @@ public class UsbMidiTest extends Activity {
 			@Override
 			public void onPermissionGranted(UsbDevice device) {
 				if (midiDevice == null || !midiDevice.matches(device)) return;
-				midiDevice.open(UsbMidiTest.this);
+				try {
+					midiDevice.open(UsbMidiTest.this);
+				} catch (ConnectionFailedException e1) {
+					update("\n\nConnection failed.");
+					midiDevice = null;
+					return;
+				}
 				new UsbMidiInputSelector(midiDevice) {
 
 					@Override
@@ -106,6 +114,8 @@ public class UsbMidiTest extends Activity {
 							input.start();
 						} catch (DeviceNotConnectedException e) {
 							mainText.setText("MIDI device has been disconnected.");
+						} catch (InterfaceNotAvailableException e) {
+							update("\n\nMIDI interface is unavailable.");
 						}
 					}
 

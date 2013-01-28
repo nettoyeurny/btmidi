@@ -18,10 +18,10 @@ package com.noisepages.nettoyeur.usb;
 
 
 /**
- * Checked exception for handling unconnected USB devices.
+ * Checked exception for handling unavailable USB interfaces.
  *
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public class DeviceNotConnectedException extends UsbException {
+public class InterfaceNotAvailableException extends UsbException {
 	private static final long serialVersionUID = 1L;
 }

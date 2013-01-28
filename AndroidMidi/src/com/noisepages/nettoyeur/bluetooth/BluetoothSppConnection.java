@@ -1,5 +1,4 @@
 /*
- * Derived from DeviceListActivity.java in android-7/samples/BluetoothChat
  *
  * Modifications
  * Copyright (C) 2011 Peter Brinkmann (peter.brinkmann@gmail.com)
@@ -26,18 +25,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
 
-import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
-import com.noisepages.nettoyeur.midi.RawByteReceiver;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
+import com.noisepages.nettoyeur.common.RawByteReceiver;
+
 
 /**
- * This class provides low-level functionality for managing a Bluetooth connection using SPP.  It is intended to be used by a
- * service that implements higher-level functionality on top of SPP, such as {@link BluetoothMidiService}.
+ * This class provides low-level functionality for managing a Bluetooth connection using SPP. It is intended to be used by a
+ * class that implements higher-level functionality on top of SPP, such as BluetoothMidiDevice.
  * 
  *  @author Peter Brinkmann
  */
@@ -61,17 +59,22 @@ public class BluetoothSppConnection {
 	private ConnectedThread connectedThread = null;
 
 	/**
-	 * @param receiver a collection of callbacks for incoming Bluetooth messages as well as connection state updates
+	 * Constructor.
+	 * 
+	 * @param observer handling Bluetooth-related events
+	 * @param receiver handling incoming data from Bluetooth
 	 * @param bufferSize buffer size for the input stream
-	 * @throws IOException thrown if Bluetooth is unavailable or disabled
+	 * @throws BluetoothUnavailableException 
+	 * @throws BluetoothDisabledException 
 	 */
-	public BluetoothSppConnection(BluetoothSppObserver observer, RawByteReceiver receiver, int bufferSize) throws IOException {
+	public BluetoothSppConnection(BluetoothSppObserver observer, RawByteReceiver receiver, int bufferSize)
+			throws BluetoothUnavailableException, BluetoothDisabledException {
 		btAdapter = BluetoothAdapter.getDefaultAdapter();
 		if (btAdapter == null) {
-			throw new IOException("Bluetooth unavailable");
+			throw new BluetoothUnavailableException();
 		}
 		if (!btAdapter.isEnabled()) {
-			throw new IOException("Bluetooth disabled");
+			throw new BluetoothDisabledException();
 		}
 		this.sppObserver = observer;
 		this.sppReceiver = receiver;
@@ -81,7 +84,7 @@ public class BluetoothSppConnection {
 	/**
 	 * @return current connection state
 	 */
-	public State getState() {
+	public State getConnectionState() {
 		return connectionState;
 	}
 
@@ -130,7 +133,7 @@ public class BluetoothSppConnection {
 		ConnectedThread thread;
 		synchronized (this) {
 			if (connectionState != State.CONNECTED) {
-				throw new IOException("Bluetooth not connected");
+				throw new BluetoothNotConnectedException();
 			}
 			thread = connectedThread;
 		}

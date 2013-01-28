@@ -13,11 +13,8 @@ import java.io.IOException;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -29,7 +26,7 @@ import android.widget.Toast;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
 import com.noisepages.nettoyeur.bluetooth.DeviceListActivity;
-import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiService;
+import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiDevice;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 
 /**
@@ -53,7 +50,7 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 			R.drawable.white31, R.drawable.white41, R.drawable.black31,
 			R.drawable.white51, R.drawable.black41, R.drawable.white61,
 			R.drawable.black51, R.drawable.white71, R.drawable.white81 };
-	private BluetoothMidiService midiService = null;
+	private BluetoothMidiDevice midiDevice = null;
 
 	private final BluetoothSppObserver observer = new BluetoothSppObserver() {
 		@Override
@@ -72,7 +69,7 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 		}
 	};
 
-	private final MidiReceiver receiver = new MidiReceiver() {
+	private final MidiReceiver receiver = new MidiReceiver.DummyReceiver() {
 		@Override
 		public void onNoteOn(int channel, int key, final int velocity) {
 			final int index = key - 60;
@@ -100,50 +97,6 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 					}
 				});
 			}
-		}
-
-		// We won't use the remaining callbacks in this demo.
-		@Override
-		public void onProgramChange(int channel, int program) {
-		}
-
-		@Override
-		public void onPolyAftertouch(int channel, int key, int velocity) {
-		}
-
-		@Override
-		public void onPitchBend(int channel, int value) {
-		}
-
-		@Override
-		public void onControlChange(int channel, int controller, int value) {
-		}
-
-		@Override
-		public void onAftertouch(int channel, int velocity) {
-		}
-
-		@Override
-		public void onRawByte(byte value) {
-		}
-	};
-
-	private final ServiceConnection connection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName name, IBinder service) {
-			midiService = ((BluetoothMidiService.BluetoothMidiBinder) service)
-					.getService();
-			try {
-				midiService.init(observer, receiver);
-			} catch (IOException e) {
-				toast("MIDI not available");
-				finish();
-			}
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName name) {
-			// this method will never be called
 		}
 	};
 
@@ -197,8 +150,12 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 		for (ImageButton key : keys) {
 			key.setOnTouchListener(this);
 		}
-		bindService(new Intent(this, BluetoothMidiService.class), connection,
-				BIND_AUTO_CREATE);
+		try {
+			midiDevice = new BluetoothMidiDevice(observer, receiver);
+		} catch (IOException e) {
+			toast("Bluetooth MIDI not available");
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -208,11 +165,9 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 	}
 
 	private void cleanup() {
-		try {
-			unbindService(connection);
-		} catch (IllegalArgumentException e) {
-			// already unbound
-			midiService = null;
+		if (midiDevice != null) {
+			midiDevice.stop();
+			midiDevice = null;
 		}
 	}
 
@@ -227,11 +182,11 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 		int action = motionEvent.getAction();
 		if (action == MotionEvent.ACTION_DOWN && !touchState) {
 			touchState = true;
-			midiService.getMidiOut().onNoteOn(0, index + 60, 100);
+			midiDevice.getMidiOut().onNoteOn(0, index + 60, 100);
 			keyDown(index);
 		} else if (action == MotionEvent.ACTION_UP && touchState) {
 			touchState = false;
-			midiService.getMidiOut().onNoteOff(0, index + 60, 64);
+			midiDevice.getMidiOut().onNoteOff(0, index + 60, 64);
 			keyUp(index);
 		}
 		return true;
@@ -256,11 +211,11 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.connect_item:
-			if (midiService.getState() == BluetoothSppConnection.State.NONE) {
+			if (midiDevice.getConnectionState() == BluetoothSppConnection.State.NONE) {
 				startActivityForResult(new Intent(this,
 						DeviceListActivity.class), CONNECT);
 			} else {
-				midiService.stop();
+				midiDevice.stop();
 			}
 			return true;
 		default:
@@ -276,9 +231,7 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 				String address = data.getExtras().getString(
 						DeviceListActivity.DEVICE_ADDRESS);
 				try {
-					midiService.connect(address, new Intent(this,
-							BluetoothMidiDemo.class),
-							"Select to return to BluetoothMidiDemo.");
+					midiDevice.connect(address);
 				} catch (IOException e) {
 					toast(e.getMessage());
 				}

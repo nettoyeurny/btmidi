@@ -23,7 +23,9 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.noisepages.nettoyeur.midi.MidiReceiver;
+import com.noisepages.nettoyeur.usb.ConnectionFailedException;
 import com.noisepages.nettoyeur.usb.DeviceNotConnectedException;
+import com.noisepages.nettoyeur.usb.InterfaceNotAvailableException;
 import com.noisepages.nettoyeur.usb.UsbBroadcastHandler;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
 import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiInput;
@@ -173,13 +175,25 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 			@Override
 			public void onPermissionGranted(UsbDevice device) {
 				if (midiDevice == null || !midiDevice.matches(device)) return;
-				midiDevice.open(UsbMidiDemo.this);
+				try {
+					midiDevice.open(UsbMidiDemo.this);
+				} catch (ConnectionFailedException e) {
+					toast("MIDI device has been disconnected");
+					midiDevice = null;
+					return;
+				}
 				final UsbMidiOutputSelector outputSelector = new UsbMidiOutputSelector(midiDevice) {
 
 					@Override
 					protected void onOutputSelected(UsbMidiOutput output, UsbMidiDevice device, int iface, int index) {
 						toast("Output selection: Interface " + iface + ", Output " + index);
-						midiOut = output.getMidiOut();
+						try {
+							midiOut = output.getMidiOut();
+						} catch (DeviceNotConnectedException e) {
+							toast("MIDI device has been disconnected");
+						} catch (InterfaceNotAvailableException e) {
+							toast("MIDI interface is unavailable");
+						}
 					}
 					
 					@Override
@@ -197,6 +211,9 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 							input.start();
 						} catch (DeviceNotConnectedException e) {
 							toast("MIDI device has been disconnected");
+							return;
+						} catch (InterfaceNotAvailableException e) {
+							toast("MIDI interface is unavailable");
 							return;
 						}
 						outputSelector.show(getFragmentManager(), null);

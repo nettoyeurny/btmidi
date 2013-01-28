@@ -20,6 +20,8 @@ import org.easymock.EasyMock;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.noisepages.nettoyeur.common.RawByteReceiver;
+
 public class ToWireConverterTest {
 
 	private ToWireConverter converter;

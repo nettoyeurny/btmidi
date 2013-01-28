@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.noisepages.nettoyeur.usb;
+package com.noisepages.nettoyeur.bluetooth;
 
+import java.io.IOException;
 
 /**
- * Checked exception for handling unconnected USB devices.
+ * Based class for handling checked Bluetooth-related exceptions.
  *
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public class DeviceNotConnectedException extends UsbException {
+public class BluetoothException extends IOException {
 	private static final long serialVersionUID = 1L;
 }

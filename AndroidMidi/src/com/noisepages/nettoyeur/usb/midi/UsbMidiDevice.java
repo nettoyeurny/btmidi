@@ -28,11 +28,13 @@ import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 
+import com.noisepages.nettoyeur.common.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
-import com.noisepages.nettoyeur.midi.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
+import com.noisepages.nettoyeur.usb.ConnectionFailedException;
 import com.noisepages.nettoyeur.usb.DeviceNotConnectedException;
+import com.noisepages.nettoyeur.usb.InterfaceNotAvailableException;
 import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
 
 /**
@@ -62,7 +64,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 	};
 		
 	private final List<UsbMidiInterface> interfaces = new ArrayList<UsbMidiDevice.UsbMidiInterface>();
-	private volatile UsbDeviceConnection connection = null;
+	private UsbDeviceConnection connection = null;
 
 	/**
 	 * MIDI-specific wrapper for USB interfaces within a USB devices. This class doesn't do much and mostly
@@ -115,12 +117,14 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 	 * Wrapper for USB MIDI input endpoints.
 	 */
 	public class UsbMidiInput {
+		private final UsbInterface iface;
 		private final UsbEndpoint inputEndpoint;
 		private volatile FromWireConverter fromWire = null;
 		private volatile int cable = -1;
 		private volatile Thread inputThread = null;
 
-		private UsbMidiInput(UsbEndpoint endpoint) {
+		private UsbMidiInput(UsbInterface iface, UsbEndpoint endpoint) {
+			this.iface = iface;
 			inputEndpoint = endpoint;
 		}
 
@@ -150,8 +154,9 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 		 * Starts listening to this MIDI input; requires a receiver to be in place.
 		 * 
 		 * @throws DeviceNotConnectedException if the MIDI device is not connected
+		 * @throws InterfaceNotAvailableException if the corresponding interface is not available
 		 */
-		public void start() throws DeviceNotConnectedException {
+		public void start() throws DeviceNotConnectedException, InterfaceNotAvailableException {
 			if (fromWire == null) {
 				throw new IllegalStateException("no receiver");
 			}
@@ -159,6 +164,9 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 				throw new DeviceNotConnectedException();
 			}
 			stop();
+			if (!connection.claimInterface(iface, true)) {
+				throw new InterfaceNotAvailableException();
+			}
 			inputThread = new Thread() {
 				private final byte[] inputBuffer = new byte[64];
 				private final byte[] tmpBuffer = new byte[3];
@@ -202,6 +210,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 	 * Wrapper for USB MIDI output endpoints.
 	 */
 	public class UsbMidiOutput {
+		private final UsbInterface iface;
 		private final UsbEndpoint outputEndpoint;
 		private volatile int cable;
 
@@ -254,7 +263,8 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 			}
 		});
 
-		private UsbMidiOutput(UsbEndpoint ep) {
+		private UsbMidiOutput(UsbInterface iface, UsbEndpoint ep) {
+			this.iface = iface;
 			outputEndpoint = ep;
 			setVirtualCable(0);
 		}
@@ -273,7 +283,21 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 			cable = (c << 4) & 0xf0;
 		}
 
-		public MidiReceiver getMidiOut() {
+		/**
+		 * Returns a MidiReceiver instance associated with this endpoint. Requires that the enclosing
+		 * USB MIDI device be connected.
+		 * 
+		 * @return MidiReceiver instance to write MIDI events to
+		 * @throws DeviceNotConnectedException if the USB MIDI device is not connected
+		 * @throws InterfaceNotAvailableException 
+		 */
+		public MidiReceiver getMidiOut() throws DeviceNotConnectedException, InterfaceNotAvailableException {
+			if (connection == null) {
+				throw new DeviceNotConnectedException();
+			}
+			if (!connection.claimInterface(iface, true)) {
+				throw new InterfaceNotAvailableException();
+			}
 			return toWire;
 		}
 	}
@@ -326,9 +350,9 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 				// If the endpoint looks like a MIDI endpoint, assume that it is one.
 				if (ep.getMaxPacketSize() == 64 && (ep.getType() & UsbConstants.USB_ENDPOINT_XFERTYPE_MASK) == UsbConstants.USB_ENDPOINT_XFER_BULK) {
 					if ((ep.getDirection() & UsbConstants.USB_ENDPOINT_DIR_MASK) == UsbConstants.USB_DIR_IN) {
-						inputs.add(new UsbMidiInput(ep));
+						inputs.add(new UsbMidiInput(iface, ep));
 					} else {
-						outputs.add(new UsbMidiOutput(ep));
+						outputs.add(new UsbMidiOutput(iface, ep));
 					}
 				}
 			}
@@ -349,19 +373,21 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 	 * Opens a USB connection to this device.
 	 * 
 	 * @param context the current context, e.g., the activity invoking this method
+	 * @throws ConnectionFailedException 
 	 */
-	public void open(Context context) {
+	public synchronized void open(Context context) throws ConnectionFailedException {
+		close();
 		UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
 		connection = manager.openDevice(device);
-		for (UsbMidiInterface iface : interfaces) {
-			connection.claimInterface(iface.getInterface(), true);
+		if (connection == null) {
+			throw new ConnectionFailedException();
 		}
 	}
 
 	/**
 	 * Stops listening on all inputs and closes the current USB connection, if any.
 	 */
-	public void close() {
+	public synchronized void close() {
 		if (connection == null) return;
 		for (UsbMidiInterface iface : interfaces) {
 			iface.stop();
@@ -369,5 +395,12 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 		}
 		connection.close();
 		connection = null;
+	}
+	
+	/**
+	 * @return true if and only if the device currently has a USB connection
+	 */
+	public synchronized boolean isConnected() {
+		return connection != null;
 	}
 }

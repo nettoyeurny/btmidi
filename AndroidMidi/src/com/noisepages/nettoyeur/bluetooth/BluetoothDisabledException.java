@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.noisepages.nettoyeur.usb;
+package com.noisepages.nettoyeur.bluetooth;
 
 
 /**
- * Checked exception for handling unconnected USB devices.
+ * Exception indicating that Bluetooth is disabled.
  *
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public class DeviceNotConnectedException extends UsbException {
+public class BluetoothDisabledException extends BluetoothException {
 	private static final long serialVersionUID = 1L;
 }
