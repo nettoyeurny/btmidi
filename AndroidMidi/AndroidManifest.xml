@@ -3,6 +3,6 @@
       package="com.noisepages.nettoyeur.midi"
       android:versionCode="1"
       android:versionName="1.0">
-      <uses-sdk android:minSdkVersion="12" />
+      <uses-sdk android:minSdkVersion="8" />
 </manifest>
  

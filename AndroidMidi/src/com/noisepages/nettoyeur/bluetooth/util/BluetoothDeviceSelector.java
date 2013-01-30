@@ -19,12 +19,14 @@ package com.noisepages.nettoyeur.bluetooth.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothDisabledException;
@@ -38,6 +40,7 @@ import com.noisepages.nettoyeur.midi.R;
  * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
+@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public abstract class BluetoothDeviceSelector extends DialogFragment {
 
 	private final List<BluetoothDevice> devices;
