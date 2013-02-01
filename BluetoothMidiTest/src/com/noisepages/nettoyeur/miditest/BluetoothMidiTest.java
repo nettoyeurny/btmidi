@@ -150,7 +150,7 @@ public class BluetoothMidiTest extends Activity implements OnClickListener {
 
 	private void cleanup() {
 		if (midiService != null) {
-			midiService.stop();
+			midiService.close();
 			midiService = null;
 		}
 	}
@@ -171,7 +171,7 @@ public class BluetoothMidiTest extends Activity implements OnClickListener {
 			if (midiService.getConnectionState() == BluetoothSppConnection.State.NONE) {
 				startActivityForResult(new Intent(this, DeviceListActivity.class), CONNECT);
 			} else {
-				midiService.stop();
+				midiService.close();
 			}
 			break;
 		case R.id.play_button:

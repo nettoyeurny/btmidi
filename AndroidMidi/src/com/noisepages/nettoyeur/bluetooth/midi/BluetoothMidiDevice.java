@@ -22,6 +22,7 @@ import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
 import com.noisepages.nettoyeur.common.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.FromWireConverter;
+import com.noisepages.nettoyeur.midi.MidiDevice;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
 
@@ -31,7 +32,7 @@ import com.noisepages.nettoyeur.midi.ToWireConverter;
  * 
  * @author Peter Brinkmann
  */
-public class BluetoothMidiDevice {
+public class BluetoothMidiDevice implements MidiDevice {
 
 	private final BluetoothSppConnection btConnection;
 	private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
@@ -69,7 +70,8 @@ public class BluetoothMidiDevice {
 	/**
 	 * Stops all Bluetooth threads and closes the Bluetooth connection.
 	 */
-	public void stop() {
+	@Override
+	public void close() {
 		btConnection.stop();
 	}
 

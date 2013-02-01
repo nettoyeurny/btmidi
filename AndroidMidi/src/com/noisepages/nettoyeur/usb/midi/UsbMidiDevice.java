@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
@@ -30,6 +31,7 @@ import android.hardware.usb.UsbManager;
 
 import com.noisepages.nettoyeur.common.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.FromWireConverter;
+import com.noisepages.nettoyeur.midi.MidiDevice;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.ToWireConverter;
 import com.noisepages.nettoyeur.usb.ConnectionFailedException;
@@ -52,7 +54,8 @@ import com.noisepages.nettoyeur.usb.UsbDeviceWithInfo;
  * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
-public class UsbMidiDevice extends UsbDeviceWithInfo {
+@TargetApi(12)
+public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 
 	// USB payload size by Code Index Number.
 	private static final int[] midiPayloadSize = new int[] {
@@ -387,6 +390,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo {
 	/**
 	 * Stops listening on all inputs and closes the current USB connection, if any.
 	 */
+	@Override
 	public synchronized void close() {
 		if (connection == null) return;
 		for (UsbMidiInterface iface : interfaces) {

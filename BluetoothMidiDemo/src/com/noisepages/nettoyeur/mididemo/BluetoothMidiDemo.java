@@ -166,7 +166,7 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 
 	private void cleanup() {
 		if (midiDevice != null) {
-			midiDevice.stop();
+			midiDevice.close();
 			midiDevice = null;
 		}
 	}
@@ -215,7 +215,7 @@ public class BluetoothMidiDemo extends Activity implements View.OnTouchListener 
 				startActivityForResult(new Intent(this,
 						DeviceListActivity.class), CONNECT);
 			} else {
-				midiDevice.stop();
+				midiDevice.close();
 			}
 			return true;
 		default:
