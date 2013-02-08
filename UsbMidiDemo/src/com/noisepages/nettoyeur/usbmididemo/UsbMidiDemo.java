@@ -178,7 +178,7 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 				try {
 					midiDevice.open(UsbMidiDemo.this);
 				} catch (ConnectionFailedException e) {
-					toast("MIDI device has been disconnected");
+					toast("USB connection failed");
 					midiDevice = null;
 					return;
 				}
