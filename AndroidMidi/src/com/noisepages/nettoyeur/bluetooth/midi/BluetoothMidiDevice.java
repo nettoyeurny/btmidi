@@ -18,8 +18,10 @@ package com.noisepages.nettoyeur.bluetooth.midi;
 
 import java.io.IOException;
 
+import com.noisepages.nettoyeur.bluetooth.BluetoothDisabledException;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
 import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
+import com.noisepages.nettoyeur.bluetooth.BluetoothUnavailableException;
 import com.noisepages.nettoyeur.common.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiDevice;
@@ -51,9 +53,10 @@ public class BluetoothMidiDevice implements MidiDevice {
 	 * 
 	 * @param observer for handling Bluetooth connection events
 	 * @param receiver for handling events from the Bluetooth input stream
-	 * @throws IOException thrown if Bluetooth is unavailable or disabled
+	 * @throws BluetoothDisabledException 
+	 * @throws BluetoothUnavailableException 
 	 */
-	public BluetoothMidiDevice(BluetoothSppObserver observer, MidiReceiver receiver) throws IOException {
+	public BluetoothMidiDevice(BluetoothSppObserver observer, MidiReceiver receiver) throws BluetoothUnavailableException, BluetoothDisabledException {
 		btConnection = new BluetoothSppConnection(observer, new FromWireConverter(receiver), 32);
 	}
 
