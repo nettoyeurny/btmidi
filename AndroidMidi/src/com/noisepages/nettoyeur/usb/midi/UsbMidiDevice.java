@@ -168,7 +168,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 		}
 		
 		/**
-		 * Starts listening to this MIDI input; requires a receiver to be in place.
+		 * Starts listening to this MIDI input.
 		 * 
 		 * @throws DeviceNotConnectedException if the MIDI device is not connected
 		 * @throws InterfaceNotAvailableException if the corresponding interface is not available
