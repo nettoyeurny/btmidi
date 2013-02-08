@@ -19,6 +19,8 @@ package com.noisepages.nettoyeur.usb.midi;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -122,8 +124,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 	public class UsbMidiInput {
 		private final UsbInterface iface;
 		private final UsbEndpoint inputEndpoint;
-		private volatile FromWireConverter fromWire = null;
-		private volatile int cable = -1;
+		private final ConcurrentMap<Integer, FromWireConverter> converters = new ConcurrentHashMap<Integer, FromWireConverter>();
 		private volatile Thread inputThread = null;
 
 		private UsbMidiInput(UsbInterface iface, UsbEndpoint endpoint) {
@@ -137,22 +138,35 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 		}
 
 		/**
-		 * Sets the receiver for incoming MIDI events.
+		 * Sets the receiver for incoming MIDI events on all virtual cables.
+		 * 
+		 * @param receiver MIDI receiver for all cables; may be null
 		 */
 		public void setReceiver(MidiReceiver receiver) {
-			fromWire = new FromWireConverter(receiver);
+			setReceiverInternal(-1, receiver);
 		}
 
 		/**
-		 * Sets the virtual cable to listen to; a value of -1 (the default) will
-		 * enable reception from all virtual cables.
+		 * Sets the receiver for a given virtual cable.
 		 * 
-		 * @param c virtual cable number, or -1 if listening on all cables
+		 * @param cable ranging from 0x00 to 0x0f
+		 * @param receiver MIDI receiver for the given cable; may be null
 		 */
-		public void setVirtualCable(int c) {
-			cable = (c >= 0) ? ((c << 4) & 0xf0) : -1;
+		public void setReceiver(int cable, MidiReceiver receiver) {
+			if (cable < 0x00 || cable > 0x0f) {
+				throw new IllegalArgumentException("Cable number out of range");
+			}
+			setReceiverInternal(cable, receiver);
 		}
 
+		private void setReceiverInternal(int cable, MidiReceiver receiver) {
+			if (receiver != null) {
+				converters.put(cable, new FromWireConverter(receiver));
+			} else {
+				converters.remove(cable);
+			}
+		}
+		
 		/**
 		 * Starts listening to this MIDI input; requires a receiver to be in place.
 		 * 
@@ -160,9 +174,6 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 		 * @throws InterfaceNotAvailableException if the corresponding interface is not available
 		 */
 		public void start() throws DeviceNotConnectedException, InterfaceNotAvailableException {
-			if (fromWire == null) {
-				throw new IllegalStateException("no receiver");
-			}
 			if (connection == null) {
 				throw new DeviceNotConnectedException();
 			}
@@ -176,17 +187,24 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 				@Override
 				public void run() {
 					while (!interrupted()) {
-						int nRead = connection.bulkTransfer(inputEndpoint, inputBuffer, inputBuffer.length, 100);
+						int nRead = connection.bulkTransfer(inputEndpoint, inputBuffer, inputBuffer.length, 50);
 						for (int i = 0; i < nRead; i += 4) {
 							int b = inputBuffer[i];
-							if (cable >= 0 && (b & 0xf0) != cable) continue;
+							int cable = (b >> 4) & 0x0f;
 							int n = midiPayloadSize[b & 0x0f];
 							if (n < 0) continue;
 							for (int j = 0; j < n; ++j) {
 								tmpBuffer[j] = inputBuffer[i + j + 1];
 							}
-							fromWire.onBytesReceived(n, tmpBuffer);
+							convertBytes(converters.get(-1), n);  // Call converter for all cables, if any.
+							convertBytes(converters.get(cable), n);
 						}
+					}
+				}
+
+				private void convertBytes(FromWireConverter converter, int n) {
+					if (converter != null) {
+						converter.onBytesReceived(n, tmpBuffer);
 					}
 				}
 			};
