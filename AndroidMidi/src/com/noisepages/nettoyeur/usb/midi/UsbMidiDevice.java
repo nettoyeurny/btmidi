@@ -116,6 +116,30 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 		}
 	}
 
+	private UsbMidiInterface asMidiInterface(UsbInterface iface) {
+		// We really ought to check interface class and subclass, but we don't since a lot of MIDI devices don't fully comply with the standard.
+		// if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) return null;
+		List<UsbMidiInput> inputs = new ArrayList<UsbMidiInput>();
+		List<UsbMidiOutput> outputs = new ArrayList<UsbMidiOutput>();
+		int epCount = iface.getEndpointCount();
+		for (int j = 0; j < epCount; ++j) {
+			UsbEndpoint ep = iface.getEndpoint(j);
+			// If the endpoint looks like a MIDI endpoint, assume that it is one. My reading of the USB MIDI specification is that the max
+			// packet size ought to be 0x40, but I've seen at least one interface (Focusrite Scarlett 2i4) that reports a max packet size
+			// of 0x200. So, we'll just check the minimum requirement for the rest of this class to work, i.e., the max packet size must be
+			// a positive multiple of 4.
+			if ((ep.getType() & UsbConstants.USB_ENDPOINT_XFERTYPE_MASK) == UsbConstants.USB_ENDPOINT_XFER_BULK &&
+					(ep.getMaxPacketSize() & 0x03) == 0 && ep.getMaxPacketSize() > 0) {
+				if ((ep.getDirection() & UsbConstants.USB_ENDPOINT_DIR_MASK) == UsbConstants.USB_DIR_IN) {
+					inputs.add(new UsbMidiInput(iface, ep));
+				} else {
+					outputs.add(new UsbMidiOutput(iface, ep));
+				}
+			}
+		}
+		return (inputs.isEmpty() && outputs.isEmpty()) ? null : new UsbMidiInterface(iface, inputs, outputs);
+	}
+
 	/**
 	 * Wrapper for USB MIDI input endpoints.
 	 */
@@ -171,7 +195,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 				throw new InterfaceNotAvailableException();
 			}
 			inputThread = new Thread() {
-				private final byte[] inputBuffer = new byte[64];
+				private final byte[] inputBuffer = new byte[inputEndpoint.getMaxPacketSize()];
 				private final byte[] tmpBuffer = new byte[3];
 				@Override
 				public void run() {
@@ -215,10 +239,10 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 	public class UsbMidiOutput {
 		private final UsbInterface iface;
 		private final UsbEndpoint outputEndpoint;
+		private final byte[] outBuffer;
 		private volatile int cable;
 
 		private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
-			private final byte[] outBuffer = new byte[64];
 			int writeIndex = 0;
 			
 			@Override
@@ -269,6 +293,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 		private UsbMidiOutput(UsbInterface iface, UsbEndpoint ep) {
 			this.iface = iface;
 			outputEndpoint = ep;
+			outBuffer = new byte[ep.getMaxPacketSize()];
 			setVirtualCable(0);
 		}
 
@@ -342,25 +367,9 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 		super(device);
 		int ifaceCount = device.getInterfaceCount();
 		for (int i = 0; i < ifaceCount; ++i) {
-			UsbInterface iface = device.getInterface(i);
-			// We really ought to check interface class and subclass, but we don't since a lot of MIDI devices don't comply with the standard.
-			// if (iface.getInterfaceClass() != 1 || iface.getInterfaceSubclass() != 3) continue;
-			List<UsbMidiInput> inputs = new ArrayList<UsbMidiInput>();
-			List<UsbMidiOutput> outputs = new ArrayList<UsbMidiOutput>();
-			int epCount = iface.getEndpointCount();
-			for (int j = 0; j < epCount; ++j) {
-				UsbEndpoint ep = iface.getEndpoint(j);
-				// If the endpoint looks like a MIDI endpoint, assume that it is one.
-				if (ep.getMaxPacketSize() == 64 && (ep.getType() & UsbConstants.USB_ENDPOINT_XFERTYPE_MASK) == UsbConstants.USB_ENDPOINT_XFER_BULK) {
-					if ((ep.getDirection() & UsbConstants.USB_ENDPOINT_DIR_MASK) == UsbConstants.USB_DIR_IN) {
-						inputs.add(new UsbMidiInput(iface, ep));
-					} else {
-						outputs.add(new UsbMidiOutput(iface, ep));
-					}
-				}
-			}
-			if (!inputs.isEmpty() || !outputs.isEmpty()) {
-				interfaces.add(new UsbMidiInterface(iface, inputs, outputs));
+			UsbMidiInterface iface = asMidiInterface(device.getInterface(i));
+			if (iface != null) {
+				interfaces.add(iface);
 			}
 		}
 	}
