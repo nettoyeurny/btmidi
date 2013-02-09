@@ -46,7 +46,7 @@ import com.noisepages.nettoyeur.midi.file.Track;
 import com.noisepages.nettoyeur.midi.file.spi.MidiFileReader;
 
 
-public abstract class MidiSequencer {
+public abstract class MidiSequence {
 
 	private static class CompoundMidiEvent implements Comparable<CompoundMidiEvent>{
 		public final long timeInMillis;
@@ -81,7 +81,7 @@ public abstract class MidiSequencer {
 	 * @throws InvalidMidiDataException thrown if the file is invalid
 	 * @throws IOException thrown if the file can't be read
 	 */
-	public MidiSequencer(InputStream is) throws InvalidMidiDataException, IOException {
+	public MidiSequence(InputStream is) throws InvalidMidiDataException, IOException {
 		MidiFileReader reader = new StandardMidiFileReader();
 		Sequence seq = reader.getSequence(is);
 		TempoCache tempoCache = new TempoCache(seq);
@@ -106,7 +106,7 @@ public abstract class MidiSequencer {
 		}
 		duration = maxTime;
 		for (Entry<Long, ByteArrayOutputStream> entry : eventsBuilder.entrySet()) {
-			events.add(new MidiSequencer.CompoundMidiEvent(entry.getKey(), entry.getValue().toByteArray()));
+			events.add(new MidiSequence.CompoundMidiEvent(entry.getKey(), entry.getValue().toByteArray()));
 		}
 		Collections.sort(events);
 	}

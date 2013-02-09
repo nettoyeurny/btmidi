@@ -17,16 +17,15 @@
 
 package com.noisepages.nettoyeur.midi.player;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -34,8 +33,15 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppConnection;
+import com.noisepages.nettoyeur.bluetooth.BluetoothDisabledException;
+import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
+import com.noisepages.nettoyeur.bluetooth.BluetoothUnavailableException;
+import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiDevice;
 import com.noisepages.nettoyeur.bluetooth.util.DeviceListActivity;
+import com.noisepages.nettoyeur.midi.FromWireConverter;
+import com.noisepages.nettoyeur.midi.MidiDevice;
+import com.noisepages.nettoyeur.midi.MidiReceiver;
+import com.noisepages.nettoyeur.midi.file.InvalidMidiDataException;
 
 
 /**
@@ -43,39 +49,20 @@ import com.noisepages.nettoyeur.bluetooth.util.DeviceListActivity;
  * 
  * @author Peter Brinkmann
  */
-public class MidiPlayer extends Activity implements MidiPlayerObserver, OnClickListener {
+public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClickListener {
 
 	private static final int CONNECT = 1;
 
-	private MidiPlayerService midiService = null;
+	private boolean connected = false;
+	private MidiDevice midiDevice = null;
+	private MidiSequence midiSequence = null;
+	private FromWireConverter midiConverter = null;
+	private Uri uri = null;
+	private Toast toast = null;
 	private Button connectButton;
 	private ImageButton playButton;
 	private ImageButton rewindButton;
 	private TextView uriView;
-	private Toast toast = null;
-
-	private final ServiceConnection connection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName name, IBinder service) {
-			midiService = ((MidiPlayerService.MidiPlayerServiceBinder) service).getService();
-			midiService.setReceiver(MidiPlayer.this);
-			Uri uri = getIntent().getData();
-			if (uri != null) {
-				try {
-					midiService.loadSong(uri);
-				} catch (Exception e) {
-					toast(e.toString());
-					finish();
-				}
-			}
-			updateWidgets();
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName name) {
-			// this method will never be called
-		}
-	};
 
 	private void toast(final String msg) {
 		runOnUiThread(new Runnable() {
@@ -102,15 +89,43 @@ public class MidiPlayer extends Activity implements MidiPlayerObserver, OnClickL
 		playButton.setOnClickListener(this);
 		rewindButton.setOnClickListener(this);
 		uriView.setText(R.string.loading);
-		bindService(new Intent(this, MidiPlayerService.class), connection, BIND_AUTO_CREATE);
+		readSequence();
+	}
+
+	private void readSequence() {
+		uri = getIntent().getData();
+		if (uri != null) {
+			try {
+				InputStream is = getContentResolver().openInputStream(uri);
+				midiSequence = new MidiSequence(is) {
+					@Override
+					protected void onPlaybackFinished() {
+						toast("Playback finished");
+						updateWidgets();
+					}
+				};
+			} catch (FileNotFoundException e) {
+				toast(e.getMessage());
+				finish();
+			} catch (InvalidMidiDataException e) {
+				toast(e.getMessage());
+				finish();
+			} catch (IOException e) {
+				toast(e.getMessage());
+				finish();
+			}
+		} else {
+			toast("No URI to read MIDI data from");
+			finish();
+		}
 	}
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		if (midiService != null) {
-			midiService.setReceiver(null);
-			unbindService(connection);
+		if (midiDevice != null) {
+			midiSequence.pause();
+			midiDevice.close();
 		}
 	}
 	
@@ -119,40 +134,52 @@ public class MidiPlayer extends Activity implements MidiPlayerObserver, OnClickL
 		switch (requestCode) {
 		case CONNECT:
 			if (resultCode == Activity.RESULT_OK) {
-				String address = data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS);
-				try {
-					midiService.connect(address, new Intent(getApplicationContext(), MidiPlayer.class), "Return to MIDI Player");
-				} catch (IOException e) {
-					toast(e.getMessage());
-				}
+				connectBluetoothMidi(data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS));
 			}
 			break;
 		}
 	}
 
+	private void connectBluetoothMidi(String address) {
+		if (midiDevice != null) {
+			midiSequence.pause();
+			midiDevice.close();
+			midiDevice = null;
+			midiConverter = null;
+		}
+		try {
+			BluetoothMidiDevice device;
+			device = new BluetoothMidiDevice(this, new MidiReceiver.DummyReceiver());
+			device.connect(address);
+			midiDevice = device;
+			midiConverter = new FromWireConverter(device.getMidiOut());
+		} catch (BluetoothUnavailableException e) {
+			toast(e.getMessage());
+		} catch (BluetoothDisabledException e) {
+			toast(e.getMessage());
+		} catch (IOException e) {
+			toast(e.getMessage());
+		}
+	}
+
 	@Override
 	public void onDeviceConnected(BluetoothDevice device) {
-		startService(serviceIntent());
 		toast("Device connected: " + device);
+		connected = true;
 		updateWidgets();
 	}
 
 	@Override
 	public void onConnectionFailed() {
 		toast("Connection failed");
+		connected = false;
 		updateWidgets();
 	}
 
 	@Override
 	public void onConnectionLost() {
-		stopService(serviceIntent());
 		toast("Connection terminated");
-		updateWidgets();
-	}
-
-	@Override
-	public void onPlaybackFinished() {
-		toast("Playback finished");
+		connected = false;
 		updateWidgets();
 	}
 
@@ -160,21 +187,24 @@ public class MidiPlayer extends Activity implements MidiPlayerObserver, OnClickL
 	public void onClick(View v) {
 		switch (v.getId()) {
 		case R.id.connectButton:
-			if (!isConnected()) {
+			if (!connected) {
 				startActivityForResult(new Intent(MidiPlayer.this, DeviceListActivity.class), CONNECT);
 			} else {
-				midiService.stop();
+				midiSequence.pause();
+				midiDevice.close();
+				midiDevice = null;
+				connected = false;
 			}
 			break;
 		case R.id.playButton:
-			if (!midiService.isPlaying()) {
-				midiService.startSong();
+			if (connected && !midiSequence.isPlaying()) {
+				midiSequence.start(midiConverter);
 			} else {
-				midiService.pauseSong();
+				midiSequence.pause();
 			}
 			break;
 		case R.id.rewindButton:
-			midiService.rewindSong();
+			midiSequence.rewind();
 			break;
 		default:
 			break;
@@ -186,22 +216,12 @@ public class MidiPlayer extends Activity implements MidiPlayerObserver, OnClickL
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				boolean connected = isConnected();
 				connectButton.setText(connected ? R.string.disconnect : R.string.connect);
 				playButton.setEnabled(connected);
 				rewindButton.setEnabled(connected);
-				playButton.setImageResource(midiService.isPlaying() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
-				Uri uri = midiService.getSongUri();
+				playButton.setImageResource(midiSequence.isPlaying() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
 				uriView.setText(uri == null ? "---" : uri.toString());
 			}
 		});
-	}
-	
-	private boolean isConnected() {
-		return midiService.getState() != BluetoothSppConnection.State.NONE;
-	}
-
-	private Intent serviceIntent() {
-		return new Intent(this, MidiPlayerService.class);
 	}
 }
