@@ -20,11 +20,15 @@ package com.noisepages.nettoyeur.midi.player;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.hardware.usb.UsbDevice;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -42,10 +46,19 @@ import com.noisepages.nettoyeur.midi.FromWireConverter;
 import com.noisepages.nettoyeur.midi.MidiDevice;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
 import com.noisepages.nettoyeur.midi.file.InvalidMidiDataException;
+import com.noisepages.nettoyeur.usb.ConnectionFailedException;
+import com.noisepages.nettoyeur.usb.DeviceNotConnectedException;
+import com.noisepages.nettoyeur.usb.InterfaceNotAvailableException;
+import com.noisepages.nettoyeur.usb.UsbBroadcastHandler;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice;
+import com.noisepages.nettoyeur.usb.midi.UsbMidiDevice.UsbMidiOutput;
+import com.noisepages.nettoyeur.usb.midi.util.UsbMidiOutputSelector;
+import com.noisepages.nettoyeur.usb.util.AsyncDeviceInfoLookup;
+import com.noisepages.nettoyeur.usb.util.UsbDeviceSelector;
 
 
 /**
- * Simple activity for playing MIDI files over Bluetooth.
+ * Simple activity for playing MIDI files over Bluetooth or USB.
  * 
  * @author Peter Brinkmann
  */
@@ -53,16 +66,25 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 
 	private static final int CONNECT = 1;
 
-	private boolean connected = false;
+	private enum ConnectionType {
+		NONE,
+		BLUETOOTH,
+		USB
+	};
+	
+	private ConnectionType connectionType = ConnectionType.NONE;
 	private MidiDevice midiDevice = null;
 	private MidiSequence midiSequence = null;
 	private FromWireConverter midiConverter = null;
 	private Uri uri = null;
 	private Toast toast = null;
-	private Button connectButton;
+	private Button connectBluetoothButton;
+	private Button connectUsbButton;
 	private ImageButton playButton;
 	private ImageButton rewindButton;
 	private TextView uriView;
+
+
 
 	private void toast(final String msg) {
 		runOnUiThread(new Runnable() {
@@ -77,21 +99,91 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 		});
 	}
 
+	private boolean usbAvailable() {
+		return Build.VERSION.SDK_INT >= 12;
+	}
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.main);
-		connectButton = (Button) findViewById(R.id.connectButton);
+		if (usbAvailable()) {
+			setContentView(R.layout.main_usb);
+			connectUsbButton = (Button) findViewById(R.id.connectUsbButton);
+			connectUsbButton.setOnClickListener(this);
+			installBroadcastHandler();
+		} else {
+			setContentView(R.layout.main);
+		}
+		connectBluetoothButton = (Button) findViewById(R.id.connectButton);
 		playButton = (ImageButton) findViewById(R.id.playButton);
 		rewindButton = (ImageButton) findViewById(R.id.rewindButton);
 		uriView = (TextView) findViewById(R.id.uriView);
-		connectButton.setOnClickListener(this);
+		connectBluetoothButton.setOnClickListener(this);
 		playButton.setOnClickListener(this);
 		rewindButton.setOnClickListener(this);
 		uriView.setText(R.string.loading);
 		readSequence();
 	}
 
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
+	private void installBroadcastHandler() {
+		UsbMidiDevice.installBroadcastHandler(this, new UsbBroadcastHandler() {
+			@Override
+			public void onPermissionGranted(UsbDevice device) {
+				try {
+					((UsbMidiDevice) midiDevice).open(MidiPlayer.this);
+				} catch (ConnectionFailedException e) {
+					toast("Connection failed");
+					return;
+				}
+				new UsbMidiOutputSelector((UsbMidiDevice) midiDevice) {
+					@Override
+					protected void onOutputSelected(UsbMidiOutput output, UsbMidiDevice device, int iface, int index) {
+						toast("Output selection: Interface " + iface + ", Output " + index);
+						try {
+							midiConverter = new FromWireConverter(output.getMidiOut());
+							connectionType = ConnectionType.USB;
+						} catch (DeviceNotConnectedException e) {
+							midiDevice = null;
+							toast("Device not connected");
+						} catch (InterfaceNotAvailableException e) {
+							midiDevice = null;
+							toast("Interface not available");
+						}
+						updateWidgets();
+					}
+					
+					@Override
+					protected void onNoSelection(UsbMidiDevice device) {
+						toast("No output selected");
+					}
+				}.show(getFragmentManager(), null);
+			}
+
+			@Override
+			public void onPermissionDenied(UsbDevice device) {
+				toast("USB permission denied");
+			}
+
+			@Override
+			public void onDeviceDetached(UsbDevice device) {
+				if (connectionType == ConnectionType.USB) {
+					midiSequence.pause();
+					midiDevice.close();
+					midiDevice = null;
+					midiConverter = null;
+					connectionType = ConnectionType.NONE;
+				}
+			}
+		});
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		updateWidgets();
+	}
+	
 	private void readSequence() {
 		uri = getIntent().getData();
 		if (uri != null) {
@@ -127,6 +219,9 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 			midiSequence.pause();
 			midiDevice.close();
 		}
+		if (usbAvailable()) {
+			UsbMidiDevice.uninstallBroadcastHandler(this);
+		}
 	}
 	
 	@Override
@@ -146,6 +241,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 			midiDevice.close();
 			midiDevice = null;
 			midiConverter = null;
+			connectionType = ConnectionType.NONE;
 		}
 		try {
 			BluetoothMidiDevice device;
@@ -162,24 +258,53 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 		}
 	}
 
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private void connectUsbDevice() {
+		if (midiDevice != null) {
+			midiSequence.pause();
+			midiDevice.close();
+			midiDevice = null;
+			connectionType = ConnectionType.NONE;
+		}
+		final List<UsbMidiDevice> devices = UsbMidiDevice.getMidiDevices(this);
+		new AsyncDeviceInfoLookup() {
+			@Override
+			protected void onLookupComplete() {
+				new UsbDeviceSelector<UsbMidiDevice>(devices) {
+					
+					@Override
+					protected void onDeviceSelected(UsbMidiDevice device) {
+						midiDevice = device;
+						device.requestPermission(MidiPlayer.this);
+					}
+					
+					@Override
+					protected void onNoSelection() {
+						toast("No device selected");
+					}
+				}.show(getFragmentManager(), null);
+			}
+		}.execute(devices.toArray(new UsbMidiDevice[devices.size()]));
+	}
+
 	@Override
 	public void onDeviceConnected(BluetoothDevice device) {
 		toast("Device connected: " + device);
-		connected = true;
+		connectionType = ConnectionType.BLUETOOTH;
 		updateWidgets();
 	}
 
 	@Override
 	public void onConnectionFailed() {
 		toast("Connection failed");
-		connected = false;
+		connectionType = ConnectionType.NONE;
 		updateWidgets();
 	}
 
 	@Override
 	public void onConnectionLost() {
 		toast("Connection terminated");
-		connected = false;
+		connectionType = ConnectionType.NONE;
 		updateWidgets();
 	}
 
@@ -187,17 +312,27 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 	public void onClick(View v) {
 		switch (v.getId()) {
 		case R.id.connectButton:
-			if (!connected) {
+			if (connectionType != ConnectionType.BLUETOOTH) {
 				startActivityForResult(new Intent(MidiPlayer.this, DeviceListActivity.class), CONNECT);
 			} else {
 				midiSequence.pause();
 				midiDevice.close();
 				midiDevice = null;
-				connected = false;
+				connectionType = ConnectionType.NONE;
+			}
+			break;
+		case R.id.connectUsbButton:
+			if (connectionType != ConnectionType.USB) {
+				connectUsbDevice();
+			} else {
+				midiSequence.pause();
+				midiDevice.close();
+				midiDevice = null;
+				connectionType = ConnectionType.NONE;
 			}
 			break;
 		case R.id.playButton:
-			if (connected && !midiSequence.isPlaying()) {
+			if (connectionType != ConnectionType.NONE && !midiSequence.isPlaying()) {
 				midiSequence.start(midiConverter);
 			} else {
 				midiSequence.pause();
@@ -216,9 +351,10 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				connectButton.setText(connected ? R.string.disconnect : R.string.connect);
-				playButton.setEnabled(connected);
-				rewindButton.setEnabled(connected);
+				connectBluetoothButton.setText(connectionType == ConnectionType.BLUETOOTH ? R.string.disconnect : R.string.connect);
+				connectUsbButton.setText(connectionType == ConnectionType.USB ? R.string.disconnect_usb : R.string.connect_usb);
+				playButton.setEnabled(connectionType != ConnectionType.NONE);
+				rewindButton.setEnabled(connectionType != ConnectionType.NONE);
 				playButton.setImageResource(midiSequence.isPlaying() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
 				uriView.setText(uri == null ? "---" : uri.toString());
 			}

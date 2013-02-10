@@ -2,13 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:orientation="vertical" android:layout_height="fill_parent">
-
-    <Button
-        android:id="@+id/connectButton"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/connect" >
-</Button>
+    <Button android:id="@+id/connectButton" android:layout_height="wrap_content" android:text="@string/connect" android:layout_width="fill_parent"></Button>
+    <Button android:id="@+id/connectUsbButton" android:layout_height="wrap_content" android:text="@string/connect_usb" android:layout_width="fill_parent"></Button>
     <LinearLayout android:layout_height="wrap_content" android:layout_width="fill_parent" android:padding="8dip">
         <TextView android:text="@string/next" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
         <TextView android:text="@string/loading" android:layout_width="fill_parent" android:layout_height="wrap_content" android:id="@+id/uriView"></TextView>
