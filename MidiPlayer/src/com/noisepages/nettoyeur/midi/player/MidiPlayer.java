@@ -350,7 +350,9 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 			@Override
 			public void run() {
 				connectBluetoothButton.setText(connectionType == ConnectionType.BLUETOOTH ? R.string.disconnect : R.string.connect);
-				connectUsbButton.setText(connectionType == ConnectionType.USB ? R.string.disconnect_usb : R.string.connect_usb);
+				if (connectUsbButton != null) {
+					connectUsbButton.setText(connectionType == ConnectionType.USB ? R.string.disconnect_usb : R.string.connect_usb);
+				}
 				playButton.setEnabled(connectionType != ConnectionType.NONE);
 				rewindButton.setEnabled(connectionType != ConnectionType.NONE);
 				playButton.setImageResource(midiSequence.isPlaying() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
