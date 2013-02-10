@@ -84,8 +84,6 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 	private ImageButton rewindButton;
 	private TextView uriView;
 
-
-
 	private void toast(final String msg) {
 		runOnUiThread(new Runnable() {
 			@Override
