@@ -1,4 +1,3 @@
-
 /* Copyright (C) 2011 Peter Brinkmann
  *
  * This program is free software; you can redistribute it and/or modify
