@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Peter Brinkmann (peter.brinkmann@gmail.com)
+/* Copyright (C) 2013 Peter Brinkmann
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,19 +17,8 @@
 
 package com.noisepages.nettoyeur.midi.player;
 
-import com.noisepages.nettoyeur.bluetooth.BluetoothSppObserver;
+public interface MidiSequenceObserver {
 
-
-/**
- * Interface to be implemented by clients of {@link BluetoothMidiPlayerService}.
- * 
- * @author Peter Brinkmann
- */
-public interface BluetoothMidiPlayerReceiver extends BluetoothSppObserver {
-	
-	/**
-	 * Called when the service finishes playing a song.
-	 */
-	void onPlaybackFinished();
+	public void onPlaybackFinished(MidiSequence sequence);
 	
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 Peter Brinkmann
+/* Copyright (C) 2013 Peter Brinkmann
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Process;
+import android.os.SystemClock;
+
+import com.noisepages.nettoyeur.common.RawByteReceiver;
 import com.noisepages.nettoyeur.midi.file.InvalidMidiDataException;
 import com.noisepages.nettoyeur.midi.file.MetaMessage;
 import com.noisepages.nettoyeur.midi.file.MidiEvent;
@@ -40,24 +46,9 @@ import com.noisepages.nettoyeur.midi.file.Track;
 import com.noisepages.nettoyeur.midi.file.spi.MidiFileReader;
 
 
-/**
- * Instances of this class read MIDI files and convert them in to sequence of MIDI events
- * represented by byte arrays with time stamps.
- * 
- * @author Peter Brinkmann
- */
-public class MidiFileSequencer implements Iterable<MidiFileSequencer.CompoundMidiEvent> {
+public class MidiSequence {
 
-	/**
-	 * A container for time-stamped compound MIDI events, consisting of a time (measured in
-	 * milliseconds) and a byte array containing one or more MIDI events in the MIDI wire
-	 * format.
-	 * 
-	 * Note: Handing out raw byte arrays is very naughty, but I want this class to operate
-	 * without the overhead of defensive copies.  Client code is expected not to overwrite
-	 * the content of the byte array.
-	 */
-	public static class CompoundMidiEvent implements Comparable<CompoundMidiEvent>{
+	private static class CompoundMidiEvent implements Comparable<CompoundMidiEvent>{
 		public final long timeInMillis;
 		public final byte[] midiBytes;
 		
@@ -73,13 +64,18 @@ public class MidiFileSequencer implements Iterable<MidiFileSequencer.CompoundMid
 		}
 	}
 	
-	private final List<CompoundMidiEvent> events = new ArrayList<CompoundMidiEvent>();
-	
 	/**
 	 * Duration of the entire song in milliseconds.
 	 */
 	public final long duration;
 
+	private final List<CompoundMidiEvent> events = new ArrayList<CompoundMidiEvent>();
+	private final MidiSequenceObserver observer;
+	private volatile boolean isPlaying = false;
+	private Iterator<CompoundMidiEvent> eventIterator = null;
+	private HandlerThread handlerThread = null;
+	private RawByteReceiver receiver = null;
+ 
 	/**
 	 * Creates a new sequencer object for a MIDI file.
 	 * 
@@ -87,7 +83,8 @@ public class MidiFileSequencer implements Iterable<MidiFileSequencer.CompoundMid
 	 * @throws InvalidMidiDataException thrown if the file is invalid
 	 * @throws IOException thrown if the file can't be read
 	 */
-	public MidiFileSequencer(InputStream is) throws InvalidMidiDataException, IOException {
+	public MidiSequence(InputStream is, MidiSequenceObserver observer) throws InvalidMidiDataException, IOException {
+		this.observer = observer;
 		MidiFileReader reader = new StandardMidiFileReader();
 		Sequence seq = reader.getSequence(is);
 		TempoCache tempoCache = new TempoCache(seq);
@@ -112,13 +109,106 @@ public class MidiFileSequencer implements Iterable<MidiFileSequencer.CompoundMid
 		}
 		duration = maxTime;
 		for (Entry<Long, ByteArrayOutputStream> entry : eventsBuilder.entrySet()) {
-			events.add(new MidiFileSequencer.CompoundMidiEvent(entry.getKey(), entry.getValue().toByteArray()));
+			events.add(new MidiSequence.CompoundMidiEvent(entry.getKey(), entry.getValue().toByteArray()));
 		}
 		Collections.sort(events);
 	}
 
-	@Override
-	public Iterator<MidiFileSequencer.CompoundMidiEvent> iterator() {
-		return events.iterator();
+	private class MidiRunnable implements Runnable {
+		private byte[] buffer;
+		private CompoundMidiEvent currentEvent;
+		private final long t0;
+		private final Handler handler;
+		
+		private MidiRunnable() {
+			handler = new Handler(handlerThread.getLooper());
+			currentEvent = eventIterator.next();
+			t0 = SystemClock.uptimeMillis() - currentEvent.timeInMillis + 250;
+		}
+		
+		private void scheduleNext() {
+			buffer = currentEvent.midiBytes;
+			handler.postAtTime(this, t0 + currentEvent.timeInMillis);
+		}
+
+		@Override
+		public void run() {
+			receiver.onBytesReceived(buffer.length, buffer);
+			if (eventIterator.hasNext()) {
+				currentEvent = eventIterator.next();
+				scheduleNext();
+			} else {
+				isPlaying = false;
+				observer.onPlaybackFinished(MidiSequence.this);
+			}
+		}
+	}
+	
+	/**
+	 * Starts playback.
+	 * 
+	 * @param receiver to which MIDI bytes will be written
+	 */
+	public void start(RawByteReceiver receiver) {
+		if (events.isEmpty()) {
+			observer.onPlaybackFinished(this);
+			return;
+		}
+		pause();
+		this.receiver = receiver;
+		if (eventIterator == null || !eventIterator.hasNext()) {
+			allNotesOff();
+			resetAllControllers();
+			eventIterator = events.iterator();
+		}
+		handlerThread = new HandlerThread("MidiSequencer", Process.THREAD_PRIORITY_AUDIO);
+		handlerThread.start();
+		isPlaying = true;
+		MidiRunnable midiRunnable = new MidiRunnable();
+		midiRunnable.scheduleNext();
+	}
+
+	/**
+	 * Pauses playback.
+	 */
+	public void pause() {
+		if (handlerThread == null) return;
+		handlerThread.quit();
+		try {
+			handlerThread.join();
+		} catch (InterruptedException e) {
+			// Do nothing.
+		}
+		isPlaying = false;
+		handlerThread = null;
+		allNotesOff();
+	}
+	
+	/**
+	 * Rewinds to the beginning of the song.
+	 */
+	public void rewind() {
+		pause();
+		eventIterator = null;
+	}
+	
+	public boolean isPlaying() {
+		return isPlaying;
+	}
+	
+	private void allNotesOff() {
+		allChannels((byte) 0x7b, (byte) 0);
+	}
+	
+	private void resetAllControllers() {
+		allChannels((byte) 0x79, (byte) 0);
+	}
+
+	private void allChannels(byte controller, byte v) {
+		byte[] buffer = new byte[] {0, controller, v};
+		for (int c = 0x00; c < 0x10; ++c) {
+			buffer[0] = (byte) (0xb0 | c);
+			receiver.onBytesReceived(buffer.length, buffer);
+		}
 	}
 }
