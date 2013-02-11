@@ -43,10 +43,11 @@ public class MidiPlayerService extends Service {
 	private static final CharSequence TAG = "MidiPlayerService";
 	private static final int ID = 1;
 	
-	private ConnectionType connectionType = ConnectionType.NONE;
-	private MidiDevice midiDevice = null;
-	private MidiSequence midiSequence = null;
-	private FromWireConverter midiConverter = null;
+	private volatile ConnectionType connectionType = ConnectionType.NONE;
+	private volatile MidiDevice midiDevice = null;
+	private volatile MidiSequence midiSequence = null;
+	private volatile FromWireConverter midiConverter = null;
+	private volatile Uri uri = null;
 	
 	private final Binder binder = new MidiPlayerServiceBinder();
 	
@@ -98,11 +99,20 @@ public class MidiPlayerService extends Service {
 					stopForeground(true);
 				}
 			});
+			this.uri = uri;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
 		}
 		return true;
+	}
+	
+	public long getDuration() {
+		return isInitialized() ? midiSequence.duration : 0;
+	}
+	
+	public Uri getUri() {
+		return uri;
 	}
 	
 	public void connectBluetooth(MidiDevice device, MidiReceiver receiver) {

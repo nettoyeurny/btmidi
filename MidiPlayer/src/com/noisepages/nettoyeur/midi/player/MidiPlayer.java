@@ -69,8 +69,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 	private static final int CONNECT = 1;
 
 	private MidiPlayerService midiService = null;
-	private MidiDevice midiDevice = null;
-	private Uri uri = null;
+	private MidiDevice tmpDevice = null;  // Only for keeping track of the current device while connecting.
 	private Toast toast = null;
 	private Button connectBluetoothButton;
 	private Button connectUsbButton;
@@ -82,28 +81,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 		@Override
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			midiService = ((MidiPlayerService.MidiPlayerServiceBinder) service).getService();
-			uri = getIntent().getData();
-			if (uri != null) {
-				new AsyncTask<Uri, Void, Void>() {
-					@Override
-					protected Void doInBackground(Uri... params) {
-						MidiSequenceObserver observer = new MidiSequenceObserver() {
-							@Override
-							public void onPlaybackFinished(MidiSequence sequence) {
-								toast("Playback finished");
-								updateWidgets();
-							}
-						};
-						if (midiService.loadMidiSequence(params[0], observer)) {
-							toast("MIDI sequence loaded");
-						} else {
-							toast("Failed to load MIDI sequence");
-						}
-						updateWidgets();
-						return null;
-					}
-				}.execute(uri);
-			}
+			loadMidiSequence(getIntent().getData());
 			updateWidgets();
 		}
 
@@ -124,6 +102,30 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 				toast.show();
 			}
 		});
+	}
+
+	private void loadMidiSequence(final Uri uri) {
+		if (uri != null) {
+			new AsyncTask<Uri, Void, Void>() {
+				@Override
+				protected Void doInBackground(Uri... params) {
+					MidiSequenceObserver observer = new MidiSequenceObserver() {
+						@Override
+						public void onPlaybackFinished(MidiSequence sequence) {
+							toast("Playback finished");
+							updateWidgets();
+						}
+					};
+					if (midiService.loadMidiSequence(params[0], observer)) {
+						toast("MIDI sequence loaded");
+					} else {
+						toast("Failed to load MIDI sequence");
+					}
+					updateWidgets();
+					return null;
+				}
+			}.execute(uri);
+		}
 	}
 
 	private boolean usbAvailable() {
@@ -158,7 +160,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 		UsbMidiDevice.installBroadcastHandler(this, new UsbBroadcastHandler() {
 			@Override
 			public void onPermissionGranted(UsbDevice device) {
-				UsbMidiDevice umd = (UsbMidiDevice) midiDevice;
+				UsbMidiDevice umd = (UsbMidiDevice) tmpDevice;
 				if (!umd.matches(device)) return;
 				try {
 					umd.open(MidiPlayer.this);
@@ -196,7 +198,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 
 			@Override
 			public void onDeviceDetached(UsbDevice device) {
-				if (midiService.getConnectionType() == ConnectionType.USB && ((UsbMidiDevice) midiDevice).matches(device)) {
+				if (midiService.getConnectionType() == ConnectionType.USB && ((UsbMidiDevice) tmpDevice).matches(device)) {
 					midiService.reset();
 					updateWidgets();
 				}
@@ -239,7 +241,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 			BluetoothMidiDevice device;
 			device = new BluetoothMidiDevice(this, new MidiReceiver.DummyReceiver());
 			device.connect(address);
-			midiDevice = device;
+			tmpDevice = device;
 		} catch (BluetoothUnavailableException e) {
 			toast(e.getMessage());
 		} catch (BluetoothDisabledException e) {
@@ -259,7 +261,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 					
 					@Override
 					protected void onDeviceSelected(UsbMidiDevice device) {
-						midiDevice = device;
+						tmpDevice = device;
 						device.requestPermission(MidiPlayer.this);
 					}
 					
@@ -275,7 +277,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 	@Override
 	public void onDeviceConnected(BluetoothDevice device) {
 		toast("Bluetooth device connected: " + device);
-		midiService.connectBluetooth(midiDevice, ((BluetoothMidiDevice) midiDevice).getMidiOut());
+		midiService.connectBluetooth(tmpDevice, ((BluetoothMidiDevice) tmpDevice).getMidiOut());
 		updateWidgets();
 	}
 
@@ -342,7 +344,8 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 				rewindButton.setEnabled(ct != ConnectionType.NONE);
 				playButton.setImageResource(isInitialized && midiService.isPlaying() ?
 						android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
-				uriView.setText(uri == null ? "---" : uri.toString());
+				Uri uri = isInitialized ? midiService.getUri() : null;
+				uriView.setText(uri != null ? uri.toString() : "---");
 			}
 		});
 	}
