@@ -90,6 +90,9 @@ public class MidiPlayerService extends Service {
 	}
 	
 	public boolean loadMidiSequence(Uri uri, final MidiSequenceObserver observer) {
+		if (isInitialized()) {
+			pause();
+		}
 		try {
 			InputStream is = getContentResolver().openInputStream(uri);
 			midiSequence = new MidiSequence(is, new MidiSequenceObserver() {
