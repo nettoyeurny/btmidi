@@ -46,7 +46,7 @@ import com.noisepages.nettoyeur.midi.file.Track;
 import com.noisepages.nettoyeur.midi.file.spi.MidiFileReader;
 
 
-public abstract class MidiSequence {
+public class MidiSequence {
 
 	private static class CompoundMidiEvent implements Comparable<CompoundMidiEvent>{
 		public final long timeInMillis;
@@ -70,6 +70,8 @@ public abstract class MidiSequence {
 	public final long duration;
 
 	private final List<CompoundMidiEvent> events = new ArrayList<CompoundMidiEvent>();
+	private final MidiSequenceObserver observer;
+	private volatile boolean isPlaying = false;
 	private Iterator<CompoundMidiEvent> eventIterator = null;
 	private HandlerThread handlerThread = null;
 	private RawByteReceiver receiver = null;
@@ -81,7 +83,8 @@ public abstract class MidiSequence {
 	 * @throws InvalidMidiDataException thrown if the file is invalid
 	 * @throws IOException thrown if the file can't be read
 	 */
-	public MidiSequence(InputStream is) throws InvalidMidiDataException, IOException {
+	public MidiSequence(InputStream is, MidiSequenceObserver observer) throws InvalidMidiDataException, IOException {
+		this.observer = observer;
 		MidiFileReader reader = new StandardMidiFileReader();
 		Sequence seq = reader.getSequence(is);
 		TempoCache tempoCache = new TempoCache(seq);
@@ -111,8 +114,6 @@ public abstract class MidiSequence {
 		Collections.sort(events);
 	}
 
-	protected abstract void onPlaybackFinished();
-	
 	private class MidiRunnable implements Runnable {
 		private byte[] buffer;
 		private CompoundMidiEvent currentEvent;
@@ -137,8 +138,8 @@ public abstract class MidiSequence {
 				currentEvent = eventIterator.next();
 				scheduleNext();
 			} else {
-				pause();
-				onPlaybackFinished();
+				isPlaying = false;
+				observer.onPlaybackFinished(MidiSequence.this);
 			}
 		}
 	}
@@ -150,7 +151,7 @@ public abstract class MidiSequence {
 	 */
 	public void start(RawByteReceiver receiver) {
 		if (events.isEmpty()) {
-			onPlaybackFinished();
+			observer.onPlaybackFinished(this);
 			return;
 		}
 		pause();
@@ -162,6 +163,7 @@ public abstract class MidiSequence {
 		}
 		handlerThread = new HandlerThread("MidiSequencer", Process.THREAD_PRIORITY_AUDIO);
 		handlerThread.start();
+		isPlaying = true;
 		MidiRunnable midiRunnable = new MidiRunnable();
 		midiRunnable.scheduleNext();
 	}
@@ -177,6 +179,7 @@ public abstract class MidiSequence {
 		} catch (InterruptedException e) {
 			// Do nothing.
 		}
+		isPlaying = false;
 		handlerThread = null;
 		allNotesOff();
 	}
@@ -190,7 +193,7 @@ public abstract class MidiSequence {
 	}
 	
 	public boolean isPlaying() {
-		return handlerThread != null;
+		return isPlaying;
 	}
 	
 	private void allNotesOff() {

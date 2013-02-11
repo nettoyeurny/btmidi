@@ -17,8 +17,13 @@
 
 package com.noisepages.nettoyeur.midi.player;
 
+import java.io.InputStream;
+
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
 
@@ -32,8 +37,11 @@ public class MidiPlayerService extends Service {
 	public enum ConnectionType {
 		NONE,
 		BLUETOOTH,
-		USB
-	};
+		USB,
+	}
+
+	private static final CharSequence TAG = "MidiPlayerService";
+	private static final int ID = 1;
 	
 	private ConnectionType connectionType = ConnectionType.NONE;
 	private MidiDevice midiDevice = null;
@@ -69,6 +77,7 @@ public class MidiPlayerService extends Service {
 			midiConverter = null;
 		}
 		connectionType = ConnectionType.NONE;
+		stopForeground(true);
 	}
 
 	public boolean isInitialized() {
@@ -79,8 +88,21 @@ public class MidiPlayerService extends Service {
 		return connectionType;
 	}
 	
-	public void setMidiSequence(MidiSequence sequence) {
-		midiSequence = sequence;
+	public boolean loadMidiSequence(Uri uri, final MidiSequenceObserver observer) {
+		try {
+			InputStream is = getContentResolver().openInputStream(uri);
+			midiSequence = new MidiSequence(is, new MidiSequenceObserver() {
+				@Override
+				public void onPlaybackFinished(MidiSequence sequence) {
+					observer.onPlaybackFinished(sequence);
+					stopForeground(true);
+				}
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
 	}
 	
 	public void connectBluetooth(MidiDevice device, MidiReceiver receiver) {
@@ -101,10 +123,16 @@ public class MidiPlayerService extends Service {
 		return isInitialized() && midiSequence.isPlaying();
 	}
 	
-	public void start() {
+	@SuppressWarnings("deprecation")
+	public void start(Intent intent) {
 		if (!isInitialized()) {
 			throw new IllegalStateException("MidiPlayerService not initialized");
 		}
+		PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0, intent, 0);
+		Notification notification = new Notification(R.drawable.din5, TAG, System.currentTimeMillis());
+		notification.setLatestEventInfo(this, TAG, "Return to MidiPlayer", pi);
+		notification.flags |= Notification.FLAG_ONGOING_EVENT;
+		startForeground(ID, notification);
 		midiSequence.start(midiConverter);
 	}
 
@@ -113,6 +141,7 @@ public class MidiPlayerService extends Service {
 			throw new IllegalStateException("MidiPlayerService not initialized");
 		}
 		midiSequence.pause();
+		stopForeground(true);
 	}
 
 	public void rewind() {
@@ -120,5 +149,6 @@ public class MidiPlayerService extends Service {
 			throw new IllegalStateException("MidiPlayerService not initialized");
 		}
 		midiSequence.rewind();
+		stopForeground(true);
 	}
 }

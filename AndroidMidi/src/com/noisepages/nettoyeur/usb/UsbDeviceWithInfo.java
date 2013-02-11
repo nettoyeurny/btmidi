@@ -16,6 +16,7 @@
 
 package com.noisepages.nettoyeur.usb;
 
+import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,6 +24,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 
 /**
  * Wrapper for {@link UsbDevice} that also holds a {@link DeviceInfo} object, plus a few convenience methods
@@ -30,6 +32,7 @@ import android.hardware.usb.UsbManager;
  * 
  * @author Peter Brinkmann (peter.brinkmann@gmail.com)
  */
+@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
 public class UsbDeviceWithInfo {
 	
 	private static final String ACTION_USB_PERMISSION = "com.noisepages.nettoyeur.usb.USB_PERMISSION";
@@ -79,7 +82,12 @@ public class UsbDeviceWithInfo {
 	 */
 	public static void uninstallBroadcastHandler(Context context) {
 		if (broadcastReceiver != null) {
-			context.unregisterReceiver(broadcastReceiver);
+			try {
+				context.unregisterReceiver(broadcastReceiver);
+			} catch (IllegalArgumentException e) {
+				// Do nothing. This exception is entirely benign; it'll happen if we try to remove a receiver that
+				// isn't there, which is a reasonable thing to do in some situations.
+			}
 			broadcastReceiver = null;
 		}
 	}

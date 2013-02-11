@@ -17,9 +17,7 @@
 
 package com.noisepages.nettoyeur.midi.player;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
 import android.annotation.TargetApi;
@@ -30,11 +28,13 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.hardware.usb.UsbDevice;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -47,7 +47,6 @@ import com.noisepages.nettoyeur.bluetooth.midi.BluetoothMidiDevice;
 import com.noisepages.nettoyeur.bluetooth.util.DeviceListActivity;
 import com.noisepages.nettoyeur.midi.MidiDevice;
 import com.noisepages.nettoyeur.midi.MidiReceiver;
-import com.noisepages.nettoyeur.midi.file.InvalidMidiDataException;
 import com.noisepages.nettoyeur.midi.player.MidiPlayerService.ConnectionType;
 import com.noisepages.nettoyeur.usb.ConnectionFailedException;
 import com.noisepages.nettoyeur.usb.DeviceNotConnectedException;
@@ -85,28 +84,25 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 			midiService = ((MidiPlayerService.MidiPlayerServiceBinder) service).getService();
 			uri = getIntent().getData();
 			if (uri != null) {
-				try {
-					InputStream is = getContentResolver().openInputStream(uri);
-					midiService.setMidiSequence(new MidiSequence(is) {
-						@Override
-						protected void onPlaybackFinished() {
-							toast("Playback finished");
-							updateWidgets();
+				new AsyncTask<Uri, Void, Void>() {
+					@Override
+					protected Void doInBackground(Uri... params) {
+						MidiSequenceObserver observer = new MidiSequenceObserver() {
+							@Override
+							public void onPlaybackFinished(MidiSequence sequence) {
+								toast("Playback finished");
+								updateWidgets();
+							}
+						};
+						if (midiService.loadMidiSequence(params[0], observer)) {
+							toast("MIDI sequence loaded");
+						} else {
+							toast("Failed to load MIDI sequence");
 						}
-					});
-				} catch (FileNotFoundException e) {
-					toast(e.getMessage());
-					finish();
-				} catch (InvalidMidiDataException e) {
-					toast(e.getMessage());
-					finish();
-				} catch (IOException e) {
-					toast(e.getMessage());
-					finish();
-				}
-			} else {
-				toast("No URI to read MIDI data from");
-				finish();
+						updateWidgets();
+						return null;
+					}
+				}.execute(uri);
 			}
 			updateWidgets();
 		}
@@ -137,6 +133,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
 		if (usbAvailable()) {
 			setContentView(R.layout.main_usb);
 			connectUsbButton = (Button) findViewById(R.id.connectUsbButton);
@@ -161,13 +158,15 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 		UsbMidiDevice.installBroadcastHandler(this, new UsbBroadcastHandler() {
 			@Override
 			public void onPermissionGranted(UsbDevice device) {
+				UsbMidiDevice umd = (UsbMidiDevice) midiDevice;
+				if (!umd.matches(device)) return;
 				try {
-					((UsbMidiDevice) midiDevice).open(MidiPlayer.this);
+					umd.open(MidiPlayer.this);
 				} catch (ConnectionFailedException e) {
 					toast("Connection failed");
 					return;
 				}
-				new UsbMidiOutputSelector((UsbMidiDevice) midiDevice) {
+				new UsbMidiOutputSelector(umd) {
 					@Override
 					protected void onOutputSelected(UsbMidiOutput output, UsbMidiDevice device, int iface, int index) {
 						toast("Output selection: Interface " + iface + ", Output " + index);
@@ -197,7 +196,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 
 			@Override
 			public void onDeviceDetached(UsbDevice device) {
-				if (midiService.getConnectionType() == ConnectionType.USB) {
+				if (midiService.getConnectionType() == ConnectionType.USB && ((UsbMidiDevice) midiDevice).matches(device)) {
 					midiService.reset();
 					updateWidgets();
 				}
@@ -275,21 +274,21 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 
 	@Override
 	public void onDeviceConnected(BluetoothDevice device) {
-		toast("Device connected: " + device);
+		toast("Bluetooth device connected: " + device);
 		midiService.connectBluetooth(midiDevice, ((BluetoothMidiDevice) midiDevice).getMidiOut());
 		updateWidgets();
 	}
 
 	@Override
 	public void onConnectionFailed() {
-		toast("Connection failed");
+		toast("Bluetooth connection failed");
 		midiService.reset();
 		updateWidgets();
 	}
 
 	@Override
 	public void onConnectionLost() {
-		toast("Connection terminated");
+		toast("Bluetooth connection lost");
 		midiService.reset();
 		updateWidgets();
 	}
@@ -313,7 +312,7 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 			break;
 		case R.id.playButton:
 			if (midiService.getConnectionType() != ConnectionType.NONE && !midiService.isPlaying()) {
-				midiService.start();
+				midiService.start(new Intent(getApplicationContext(), MidiPlayer.class));
 			} else {
 				midiService.pause();
 			}
@@ -331,17 +330,17 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				boolean connected = midiService != null;
-				ConnectionType ct = connected ? midiService.getConnectionType() : ConnectionType.NONE;
+				boolean isInitialized = midiService != null && midiService.isInitialized();
+				ConnectionType ct = isInitialized ? midiService.getConnectionType() : ConnectionType.NONE;
 				connectBluetoothButton.setText(ct == ConnectionType.BLUETOOTH ? R.string.disconnect : R.string.connect);
-				connectBluetoothButton.setEnabled(connected);
+				connectBluetoothButton.setEnabled(isInitialized);
 				if (connectUsbButton != null) {
 					connectUsbButton.setText(ct == ConnectionType.USB ? R.string.disconnect_usb : R.string.connect_usb);
-					connectUsbButton.setEnabled(connected);
+					connectUsbButton.setEnabled(isInitialized);
 				}
 				playButton.setEnabled(ct != ConnectionType.NONE);
 				rewindButton.setEnabled(ct != ConnectionType.NONE);
-				playButton.setImageResource(connected && midiService.isPlaying() ?
+				playButton.setImageResource(isInitialized && midiService.isPlaying() ?
 						android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
 				uriView.setText(uri == null ? "---" : uri.toString());
 			}
