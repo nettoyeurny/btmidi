@@ -117,6 +117,14 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 		public void onRawByte(byte value) {
 			toast("raw byte: " + value);
 		}
+
+		@Override
+		public boolean beginBlock() {
+			return false;
+		}
+
+		@Override
+		public void endBlock() {}
 	};
 
 	private Toast toast = null;

@@ -16,6 +16,7 @@
 
 package com.noisepages.nettoyeur.bluetooth.midi;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import com.noisepages.nettoyeur.bluetooth.BluetoothDisabledException;
@@ -38,12 +39,40 @@ public class BluetoothMidiDevice implements MidiDevice {
 
 	private final BluetoothSppConnection btConnection;
 	private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
+		private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		private boolean inBlock = false;
+		
 		@Override
 		public void onBytesReceived(int nBytes, byte[] buffer) {
-			try {
-				btConnection.write(buffer, 0, buffer.length);
-			} catch (IOException e) {
-				e.printStackTrace();
+			if (inBlock) {
+				outputStream.write(buffer, 0, nBytes);
+			} else {
+				try {
+					btConnection.write(buffer, 0, nBytes);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		@Override
+		public boolean beginBlock() {
+			outputStream.reset();
+			inBlock = true;
+			return true;
+		}
+
+		@Override
+		public void endBlock() {
+			if (inBlock) {
+				try {
+					btConnection.write(outputStream.toByteArray(), 0, outputStream.size());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				inBlock = false;
+			} else {
+				throw new IllegalStateException("Not in block mode");
 			}
 		}
 	});

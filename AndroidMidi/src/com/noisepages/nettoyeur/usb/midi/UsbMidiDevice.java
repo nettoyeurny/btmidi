@@ -16,6 +16,7 @@
 
 package com.noisepages.nettoyeur.usb.midi;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -237,6 +238,8 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 		private volatile int cable;
 
 		private final ToWireConverter toWire = new ToWireConverter(new RawByteReceiver() {
+			private final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			private boolean inBlock = false;
 			int writeIndex = 0;
 			
 			@Override
@@ -279,8 +282,28 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 				}
 			}
 			private void transfer() {
-				connection.bulkTransfer(outputEndpoint, outBuffer, writeIndex, 0);
+				if (inBlock) {
+					outputStream.write(outBuffer, 0, writeIndex);
+				} else {
+					connection.bulkTransfer(outputEndpoint, outBuffer, writeIndex, 0);
+				}
 				writeIndex = 0;
+			}
+
+			@Override
+			public boolean beginBlock() {
+				outputStream.reset();
+				inBlock = true;
+				return true;
+			}
+
+			@Override
+			public void endBlock() {
+				if (inBlock) {
+					connection.bulkTransfer(outputEndpoint, outputStream.toByteArray(), outputStream.size(), 0);
+				} else {
+					throw new IllegalStateException("Not in block mode");
+				}
 			}
 		});
 

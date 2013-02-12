@@ -88,4 +88,14 @@ public class ToWireConverter implements MidiReceiver {
 	private void writeBytes(byte... out) {
 		rawReceiver.onBytesReceived(out.length, out);
 	}
+
+	@Override
+	public boolean beginBlock() {
+		return rawReceiver.beginBlock();
+	}
+
+	@Override
+	public void endBlock() {
+		rawReceiver.endBlock();
+	}
 }

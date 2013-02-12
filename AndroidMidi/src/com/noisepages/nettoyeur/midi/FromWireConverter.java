@@ -116,4 +116,14 @@ public class FromWireConverter implements RawByteReceiver {
 			}
 		}
 	}
+
+	@Override
+	public boolean beginBlock() {
+		return midiReceiver.beginBlock();
+	}
+
+	@Override
+	public void endBlock() {
+		midiReceiver.endBlock();
+	}
 }

@@ -32,4 +32,16 @@ public interface RawByteReceiver {
 	 */
 	void onBytesReceived(int nBytes, byte[] buffer);
 
+	/**
+	 * Begin assembling subsequent calls to onBytesReceived into one buffer. This is an optional optimization.
+	 * 
+	 * @return true if block mode is supported
+	 */
+	boolean beginBlock();
+	
+	/**
+	 * Optionally concludes a block of buffers. If block mode is supported, this call will cause the messages
+	 * received since the beginBlock() call to be handled, e.g., by writing them to a USB or other device.
+	 */
+	void endBlock();
 }

@@ -74,6 +74,14 @@ public class UsbMidiTest extends Activity {
 		public void onAftertouch(final int channel, final int velocity) {
 			update("aftertouch: " + channel + ", " + velocity);
 		}
+
+		@Override
+		public boolean beginBlock() {
+			return false;
+		}
+
+		@Override
+		public void endBlock() {}
 	};
 
 	private void update(final String n) {

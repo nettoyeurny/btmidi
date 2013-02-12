@@ -133,7 +133,9 @@ public class MidiSequence {
 
 		@Override
 		public void run() {
+			receiver.beginBlock();
 			receiver.onBytesReceived(buffer.length, buffer);
+			receiver.endBlock();
 			if (eventIterator.hasNext()) {
 				currentEvent = eventIterator.next();
 				scheduleNext();
