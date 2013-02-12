@@ -86,7 +86,7 @@ public class BluetoothMidiDevice implements MidiDevice {
 	 * @throws BluetoothUnavailableException 
 	 */
 	public BluetoothMidiDevice(BluetoothSppObserver observer, MidiReceiver receiver) throws BluetoothUnavailableException, BluetoothDisabledException {
-		btConnection = new BluetoothSppConnection(observer, new FromWireConverter(receiver), 32);
+		btConnection = new BluetoothSppConnection(observer, new FromWireConverter(receiver), 64);
 	}
 
 	/**
