@@ -221,7 +221,7 @@ public class UsbMidiDevice extends UsbDeviceWithInfo implements MidiDevice {
 				try {
 					inputThread.join();
 				} catch (InterruptedException e) {
-					// Do nothing.
+					Thread.currentThread().interrupt();  // Preserve interrupt flag in case the caller needs it.
 				}
 				inputThread = null;
 			}

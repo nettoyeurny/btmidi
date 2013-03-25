@@ -179,7 +179,7 @@ public class MidiSequence {
 		try {
 			handlerThread.join();
 		} catch (InterruptedException e) {
-			// Do nothing.
+			Thread.currentThread().interrupt();  // Preserve interrupt flag in case the caller needs it.
 		}
 		isPlaying = false;
 		handlerThread = null;
