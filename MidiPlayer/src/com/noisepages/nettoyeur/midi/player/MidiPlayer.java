@@ -350,3 +350,4 @@ public class MidiPlayer extends Activity implements BluetoothSppObserver, OnClic
 		});
 	}
 }
+

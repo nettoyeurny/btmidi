@@ -78,3 +78,4 @@ public abstract class UsbDeviceSelector<T extends UsbDeviceWithInfo> extends Dia
 	 */
 	protected abstract void onNoSelection();
 }
+

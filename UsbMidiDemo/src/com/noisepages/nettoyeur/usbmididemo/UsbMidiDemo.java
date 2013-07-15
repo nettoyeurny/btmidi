@@ -336,3 +336,4 @@ public class UsbMidiDemo extends Activity implements View.OnTouchListener {
 		}.execute(devices.toArray(new UsbMidiDevice[devices.size()]));
 	}
 }
+
