@@ -1,7 +1,7 @@
 /**
  * 
- * For information on usage and redistribution, and for a DISCLAIMER OF ALL
- * WARRANTIES, see the file, "LICENSE.txt," in this distribution.
+ * For information on usage and redistribution, and for a DISCLAIMER OF ALL WARRANTIES, see the
+ * file, "LICENSE.txt," in this distribution.
  * 
  */
 
@@ -27,187 +27,187 @@ import com.noisepages.nettoyeur.midi.MidiReceiver;
 
 public class BluetoothMidiTest extends Activity implements OnClickListener {
 
-	private static final String TAG = "Midi Test";
+  private static final String TAG = "Midi Test";
 
-	private static final int CONNECT = 1;
+  private static final int CONNECT = 1;
 
-	private Button connect;
-	private Button play;
-	private TextView logs;
+  private Button connect;
+  private Button play;
+  private TextView logs;
 
-	private BluetoothMidiDevice midiService = null;
+  private BluetoothMidiDevice midiService = null;
 
-	private Toast toast = null;
-	
-	private void toast(final String msg) {
-		runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				if (toast == null) {
-					toast = Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT);
-				}
-				toast.setText(TAG + ": " + msg);
-				toast.show();
-			}
-		});
-	}
+  private Toast toast = null;
 
-	private void post(final String s) {
-		runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				logs.append(s + ((s.endsWith("\n")) ? "" : "\n"));
-			}
-		});
-	}
+  private void toast(final String msg) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        if (toast == null) {
+          toast = Toast.makeText(getApplicationContext(), "", Toast.LENGTH_SHORT);
+        }
+        toast.setText(TAG + ": " + msg);
+        toast.show();
+      }
+    });
+  }
 
-	private final BluetoothSppObserver observer = new BluetoothSppObserver() {
-		@Override
-		public void onDeviceConnected(BluetoothDevice device) {
-			post("device connected: " + device);
-		}
+  private void post(final String s) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        logs.append(s + ((s.endsWith("\n")) ? "" : "\n"));
+      }
+    });
+  }
 
-		@Override
-		public void onConnectionLost() {
-			post("connection lost");
-		}
+  private final BluetoothSppObserver observer = new BluetoothSppObserver() {
+    @Override
+    public void onDeviceConnected(BluetoothDevice device) {
+      post("device connected: " + device);
+    }
 
-		@Override
-		public void onConnectionFailed() {
-			post("connection failed");
-		}
-	};
+    @Override
+    public void onConnectionLost() {
+      post("connection lost");
+    }
 
-	private final MidiReceiver receiver = new MidiReceiver() {
-		@Override
-		public void onNoteOff(int channel, int key, int velocity) {
-			post("note off: " + channel + ", " + key + ", " + velocity);
-		}
+    @Override
+    public void onConnectionFailed() {
+      post("connection failed");
+    }
+  };
 
-		@Override
-		public void onNoteOn(int channel, int key, int velocity) {
-			post("note on: " + channel + ", " + key + ", " + velocity);
-		}
+  private final MidiReceiver receiver = new MidiReceiver() {
+    @Override
+    public void onNoteOff(int channel, int key, int velocity) {
+      post("note off: " + channel + ", " + key + ", " + velocity);
+    }
 
-		@Override
-		public void onAftertouch(int channel, int velocity) {
-			post("aftertouch: " + channel + ", " + velocity);
-		}
+    @Override
+    public void onNoteOn(int channel, int key, int velocity) {
+      post("note on: " + channel + ", " + key + ", " + velocity);
+    }
 
-		@Override
-		public void onControlChange(int channel, int controller, int value) {
-			post("control change: " + channel + ", " + controller + ", " + value);
-		}
+    @Override
+    public void onAftertouch(int channel, int velocity) {
+      post("aftertouch: " + channel + ", " + velocity);
+    }
 
-		@Override
-		public void onPitchBend(int channel, int value) {
-			post("pitch bend: " + channel + ", " + value);
-		}
+    @Override
+    public void onControlChange(int channel, int controller, int value) {
+      post("control change: " + channel + ", " + controller + ", " + value);
+    }
 
-		@Override
-		public void onPolyAftertouch(int channel, int key, int velocity) {
-			post("polyphonic aftertouch: " + channel + ", " + key + ", " + velocity);
-		}
+    @Override
+    public void onPitchBend(int channel, int value) {
+      post("pitch bend: " + channel + ", " + value);
+    }
 
-		@Override
-		public void onProgramChange(int channel, int program) {
-			post("program change: " + channel + ", " + program);
-		}
+    @Override
+    public void onPolyAftertouch(int channel, int key, int velocity) {
+      post("polyphonic aftertouch: " + channel + ", " + key + ", " + velocity);
+    }
 
-		@Override
-		public void onRawByte(byte value) {
-			post("raw byte: " + Integer.toHexString(value));
-		}
+    @Override
+    public void onProgramChange(int channel, int program) {
+      post("program change: " + channel + ", " + program);
+    }
 
-		@Override
-		public boolean beginBlock() {
-			return false;
-		}
+    @Override
+    public void onRawByte(byte value) {
+      post("raw byte: " + Integer.toHexString(value));
+    }
 
-		@Override
-		public void endBlock() {}
-	};
+    @Override
+    public boolean beginBlock() {
+      return false;
+    }
 
-	@Override
-	protected void onCreate(android.os.Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		initGui();
-		try {
-			midiService = new BluetoothMidiDevice(observer, receiver);
-		} catch (IOException e) {
-			toast("MIDI not available");
-			finish();
-		}
-	};
+    @Override
+    public void endBlock() {}
+  };
 
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		cleanup();
-	}
+  @Override
+  protected void onCreate(android.os.Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    initGui();
+    try {
+      midiService = new BluetoothMidiDevice(observer, receiver);
+    } catch (IOException e) {
+      toast("MIDI not available");
+      finish();
+    }
+  };
 
-	private void initGui() {
-		setContentView(R.layout.main);
-		connect = (Button) findViewById(R.id.connect_button);
-		connect.setOnClickListener(this);
-		play = (Button) findViewById(R.id.play_button);
-		play.setOnClickListener(this);
-		logs = (TextView) findViewById(R.id.log_box);
-		logs.setMovementMethod(new ScrollingMovementMethod());
-	}
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    cleanup();
+  }
 
-	private void cleanup() {
-		if (midiService != null) {
-			midiService.close();
-			midiService = null;
-		}
-	}
+  private void initGui() {
+    setContentView(R.layout.main);
+    connect = (Button) findViewById(R.id.connect_button);
+    connect.setOnClickListener(this);
+    play = (Button) findViewById(R.id.play_button);
+    play.setOnClickListener(this);
+    logs = (TextView) findViewById(R.id.log_box);
+    logs.setMovementMethod(new ScrollingMovementMethod());
+  }
 
-	@Override
-	public void finish() {
-		cleanup();
-		super.finish();
-	}
+  private void cleanup() {
+    if (midiService != null) {
+      midiService.close();
+      midiService = null;
+    }
+  }
 
-	private int note = 60;
-	private boolean on = false;
+  @Override
+  public void finish() {
+    cleanup();
+    super.finish();
+  }
 
-	@Override
-	public void onClick(View v) {
-		switch (v.getId()) {
-		case R.id.connect_button:
-			if (midiService.getConnectionState() == BluetoothSppConnection.State.NONE) {
-				startActivityForResult(new Intent(this, DeviceListActivity.class), CONNECT);
-			} else {
-				midiService.close();
-			}
-			break;
-		case R.id.play_button:
-			if (!on) {
-				midiService.getMidiOut().onNoteOn(0, note, 80);
-			} else {
-				midiService.getMidiOut().onNoteOff(0, note, 64);
-				note++;
-			}
-			on = !on;
-		default:
-			break;
-		}
-	}
+  private int note = 60;
+  private boolean on = false;
 
-	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		switch (requestCode) {
-		case CONNECT:
-			if (resultCode == Activity.RESULT_OK) {
-				String address = data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS);
-				try {
-					midiService.connect(address);
-				} catch (IOException e) {
-					toast(e.getMessage());
-				}                
-			}
-			break;
-		}
-	}
+  @Override
+  public void onClick(View v) {
+    switch (v.getId()) {
+      case R.id.connect_button:
+        if (midiService.getConnectionState() == BluetoothSppConnection.State.NONE) {
+          startActivityForResult(new Intent(this, DeviceListActivity.class), CONNECT);
+        } else {
+          midiService.close();
+        }
+        break;
+      case R.id.play_button:
+        if (!on) {
+          midiService.getMidiOut().onNoteOn(0, note, 80);
+        } else {
+          midiService.getMidiOut().onNoteOff(0, note, 64);
+          note++;
+        }
+        on = !on;
+      default:
+        break;
+    }
+  }
+
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    switch (requestCode) {
+      case CONNECT:
+        if (resultCode == Activity.RESULT_OK) {
+          String address = data.getExtras().getString(DeviceListActivity.DEVICE_ADDRESS);
+          try {
+            midiService.connect(address);
+          } catch (IOException e) {
+            toast(e.getMessage());
+          }
+        }
+        break;
+    }
+  }
 }
