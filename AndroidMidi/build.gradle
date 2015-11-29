@@ -1,4 +1,10 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+version = '1.0.0-rc1'
+group = 'com.noisepages.nettoyeur'
+archivesBaseName = 'midi'
 
 android {
     compileSdkVersion 22
@@ -20,5 +26,76 @@ android {
         }
 
         instrumentTest.setRoot('tests')
+    }
+}
+
+def siteUrl = 'https://github.com/nettoyeurny/btmidi'
+def gitUrl = 'https://github.com/nettoyeurny/btmidi.git'
+
+install {
+    repositories.mavenInstaller {
+
+        pom {
+            project {
+                packaging 'aar'
+
+                name 'MIDI for Android, over USB as well as Bluetooth'
+                url siteUrl
+
+                licenses {
+                    license {
+                        name 'Apache-2.0'
+                        url 'http://opensource.org/licenses/apache2.0.php'
+                    }
+                }
+
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+
+                }
+            }
+        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+bintray {
+    if(project.hasProperty("bintray.user") && project.hasProperty("bintray.apikey")) {
+        user = project.property("bintray.user")
+        key = project.property("bintray.apikey")
+    } else {
+        logger.info('Bintray user/apikey not found')
+    }
+
+    configurations = ['archives']
+    pkg {
+        repo = "maven"
+        name = "AndroidMidi"
+        userOrg = 'pd-for-android'
+        websiteUrl = siteUrl
+        vcsUrl = gitUrl
+        licenses = ["Apache-2.0"]
+        publish = false
     }
 }
