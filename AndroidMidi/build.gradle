@@ -1,5 +1,10 @@
 apply plugin: 'com.android.library'
 
+dependencies {
+    testCompile 'junit:junit:4.11'
+    testCompile 'org.easymock:easymock:3.1'
+}
+
 android {
     compileSdkVersion 22
     buildToolsVersion '23.0.1'
@@ -7,18 +12,5 @@ android {
     defaultConfig {
         minSdkVersion 8
         targetSdkVersion 8
-    }
-    sourceSets {
-        main {
-            manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['src']
-            resources.srcDirs = ['src']
-            aidl.srcDirs = ['src']
-            renderscript.srcDirs = ['src']
-            res.srcDirs = ['res']
-            assets.srcDirs = ['assets']
-        }
-
-        instrumentTest.setRoot('tests')
     }
 }

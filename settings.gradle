@@ -1,1 +1,6 @@
 include ':AndroidMidi'
+include ':BluetoothMidiDemo'
+include ':BluetoothMidiTest'
+include ':MidiPlayer'
+include ':UsbMidiDemo'
+include ':UsbMidiTest'
