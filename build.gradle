@@ -9,3 +9,9 @@ buildscript {
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.4'
     }
 }
+
+allprojects {
+    repositories {
+        jcenter()
+    }
+}
